@@ -1,0 +1,154 @@
+@import './tokens.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base Styles */
+@layer base {
+  * {
+    @apply border-cd-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-cd-bg text-cd-text font-sans antialiased;
+    @apply leading-relaxed;
+  }
+
+  /* Typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold leading-tight;
+  }
+
+  h1 {
+    @apply text-4xl md:text-5xl;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+
+  h3 {
+    @apply text-2xl md:text-3xl;
+  }
+
+  h4 {
+    @apply text-xl md:text-2xl;
+  }
+
+  p {
+    @apply leading-7;
+  }
+
+  a {
+    @apply transition-colors duration-150;
+  }
+
+  /* Focus styles for accessibility */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-cd-desert ring-offset-2;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-cd-mint text-cd-midnight;
+  }
+}
+
+/* Component utilities */
+@layer components {
+  /* Container */
+  .container-cd {
+    @apply container mx-auto max-w-cd px-4 lg:px-8;
+  }
+
+  /* Animation utilities */
+  .animate-fade-up {
+    animation: fadeUp 0.45s var(--ease-cd);
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  /* Custom scrollbar */
+  .scrollbar-thin::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-cd-surface;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-cd-border rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-cd-muted;
+  }
+
+  /* Card base */
+  .card-base {
+    @apply bg-white rounded-md shadow-cd-sm p-6;
+  }
+
+  /* Input base */
+  .input-base {
+    @apply w-full px-4 py-2 border border-cd-border rounded-md;
+    @apply focus:outline-none focus:ring-2 focus:ring-cd-desert focus:border-transparent;
+    @apply placeholder:text-cd-muted transition-all duration-150;
+  }
+
+  /* Button reset */
+  .btn-reset {
+    @apply border-none bg-transparent p-0 cursor-pointer;
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Backdrop blur utilities */
+  .backdrop-blur-subtle {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  /* Gradient overlays */
+  .gradient-overlay {
+    @apply relative;
+  }
+
+  .gradient-overlay::after {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none;
+  }
+
+  /* Safe area for notched devices */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Print styles */
+@media print {
+  body {
+    @apply text-black bg-white;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
