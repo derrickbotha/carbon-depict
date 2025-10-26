@@ -167,14 +167,23 @@ router.put('/:id', async (req, res) => {
       })
     }
 
-    // Get companyId from auth middleware
+    // Get companyId from auth middleware  
     const companyId = req.companyId || req.user?.companyId
     
     // Check access - ensure user can only update their company's metrics
     const metricCompanyId = metric.companyId?.toString() || metric.companyId
-    const userCompanyId = companyId || req.user?.company?._id?.toString() || req.user?.company?.toString()
+    const userCompanyId = companyId?.toString() || req.user?.company?._id?.toString() || req.user?.company?.toString() || companyId
 
-    if (metricCompanyId !== userCompanyId) {
+    console.log('Update metric access check:', {
+      metricCompanyId,
+      userCompanyId,
+      reqCompanyId: companyId,
+      reqCompanyIdType: typeof companyId,
+      metricCompanyIdType: typeof metricCompanyId,
+      userCompanyIdType: typeof userCompanyId
+    })
+
+    if (metricCompanyId && userCompanyId && metricCompanyId !== userCompanyId) {
       console.error('Update metric access denied:', {
         metricCompanyId,
         userCompanyId,
