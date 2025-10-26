@@ -55,7 +55,8 @@ const authenticate = async (req, res, next) => {
     // Attach user to request
     req.user = user
     req.userId = user.id
-    req.companyId = user.companyId ? user.companyId.toString() : user.company?._id?.toString()
+    // Set companyId from decoded token first, then fallback to user object
+    req.companyId = decoded.companyId?.toString() || user.companyId?.toString() || user.company?._id?.toString()
 
     // Update last login occasionally to avoid write amplification
     const now = Date.now()
