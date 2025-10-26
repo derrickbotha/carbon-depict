@@ -41,36 +41,98 @@ export default function ESGExecutiveDashboard() {
 
   useEffect(() => {
     loadDashboardData()
+    
+    // Set up real-time updates every 30 seconds
+    const interval = setInterval(() => {
+      loadDashboardData()
+    }, 30000)
+
+    return () => clearInterval(interval)
   }, [selectedFramework, timeRange])
 
   const loadDashboardData = async () => {
     setLoading(true)
     try {
-      // Fetch ESG metrics for the selected framework
+      console.log(`Loading ESG data for framework: ${selectedFramework}`)
+      
+      // Fetch ESG metrics filtered by framework
       const response = await enterpriseAPI.esgMetrics.getAll({
         framework: selectedFramework,
+        sort: '-createdAt',
         limit: 100
       })
 
-      if (response.data.success) {
-        setMetrics(response.data.data)
+      console.log('ESG metrics response:', response)
+
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        const frameworkMetrics = response.data.data
+        console.log(`Found ${frameworkMetrics.length} metrics for ${selectedFramework}`)
+        setMetrics(frameworkMetrics)
+      } else {
+        console.warn('No data or success=false in response')
+        setMetrics([])
       }
 
       setLastUpdated(new Date())
     } catch (error) {
       console.error('Error loading ESG dashboard data:', error)
+      console.error('Error details:', error.response?.data)
+      setMetrics([]) // Show empty state on error
     } finally {
       setLoading(false)
     }
   }
+  
+  // Also fetch emissions data for Environmental pillar
+  const [emissionsData, setEmissionsData] = useState([])
+  
+  useEffect(() => {
+    const loadEmissionsData = async () => {
+      try {
+        const response = await enterpriseAPI.emissions.getAll({ limit: 50 })
+        if (response.data?.success) {
+          setEmissionsData(response.data.data || [])
+        }
+      } catch (error) {
+        console.error('Error loading emissions data:', error)
+      }
+    }
+    
+    loadEmissionsData()
+    
+    // Real-time updates every 2 minutes for emissions
+    const interval = setInterval(loadEmissionsData, 120000)
+    return () => clearInterval(interval)
+  }, [])
 
-  // Group metrics by pillar (E, S, G)
+  // Group metrics by pillar (E, S, G) and enhance with emissions data
   const groupedMetrics = useMemo(() => {
     const env = metrics.filter(m => m.pillar === 'Environmental')
     const social = metrics.filter(m => m.pillar === 'Social')
     const governance = metrics.filter(m => m.pillar === 'Governance')
-    return { env, social, governance }
-  }, [metrics])
+    
+    // Enhance environmental section with emissions data if available
+    const emissionsMetrics = emissionsData.map(emission => ({
+      _id: emission._id,
+      metricName: `${emission.activityType || 'Emissions'} (${emission.scope})`,
+      topic: 'GHG Emissions',
+      pillar: 'Environmental',
+      value: emission.co2e || 0,
+      unit: 'kg CO2e',
+      target: null,
+      trend: null,
+      dataQuality: 'high',
+      reportingPeriod: emission.reportingPeriod || new Date().getFullYear().toString(),
+      framework: 'GRI,TCFD,SBTi',
+      source: 'emissions'
+    }))
+    
+    return { 
+      env: [...env, ...emissionsMetrics], 
+      social, 
+      governance 
+    }
+  }, [metrics, emissionsData])
 
   // Calculate summary statistics
   const summary = useMemo(() => {
@@ -87,6 +149,38 @@ export default function ESGExecutiveDashboard() {
 
     return { totalKPIs, withTargets, onTrack, atRisk }
   }, [metrics])
+  
+  // Get framework description
+  const getFrameworkDescription = (framework) => {
+    const descriptions = {
+      GRI: 'Global Reporting Initiative - Comprehensive ESG reporting standards',
+      TCFD: 'Task Force on Climate-related Financial Disclosures - Climate risk reporting',
+      CDP: 'Carbon Disclosure Project - Environmental impact disclosure',
+      CSRD: 'Corporate Sustainability Reporting Directive - EU compliance reporting',
+      SBTi: 'Science Based Targets initiative - Climate goal verification',
+      SDG: 'Sustainable Development Goals - UN global sustainability framework'
+    }
+    return descriptions[framework] || 'ESG Reporting Framework'
+  }
+  
+  // Get framework stats
+  const frameworkStats = useMemo(() => {
+    const totalEmissions = emissionsData.reduce((sum, e) => sum + (e.co2e || 0), 0)
+    const scopeBreakdown = {
+      scope1: emissionsData.filter(e => e.scope === 'scope1').reduce((sum, e) => sum + (e.co2e || 0), 0),
+      scope2: emissionsData.filter(e => e.scope === 'scope2').reduce((sum, e) => sum + (e.co2e || 0), 0),
+      scope3: emissionsData.filter(e => e.scope === 'scope3').reduce((sum, e) => sum + (e.co2e || 0), 0)
+    }
+    
+    return {
+      totalEmissions: totalEmissions.toFixed(2),
+      scopeBreakdown: {
+        scope1: scopeBreakdown.scope1.toFixed(2),
+        scope2: scopeBreakdown.scope2.toFixed(2),
+        scope3: scopeBreakdown.scope3.toFixed(2)
+      }
+    }
+  }, [emissionsData])
 
   const getTrendIndicator = (metric) => {
     if (!metric.trend) return null
@@ -205,7 +299,7 @@ export default function ESGExecutiveDashboard() {
 
       {/* Framework Selector */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-gray-600" />
             <span className="text-sm font-semibold text-gray-700">Framework:</span>
@@ -226,7 +320,30 @@ export default function ESGExecutiveDashboard() {
             ))}
           </div>
         </div>
+        <p className="text-sm text-gray-600">
+          {getFrameworkDescription(selectedFramework)}
+        </p>
       </div>
+      
+      {/* Emissions Summary */}
+      {emissionsData.length > 0 && (
+        <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-lg border border-teal-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Total GHG Emissions</h3>
+              <p className="text-3xl font-bold text-teal-600 mt-2">
+                {frameworkStats.totalEmissions} kg CO2e
+              </p>
+              <p className="text-sm text-gray-600 mt-1">
+                Scope 1: {frameworkStats.scopeBreakdown.scope1} | 
+                Scope 2: {frameworkStats.scopeBreakdown.scope2} | 
+                Scope 3: {frameworkStats.scopeBreakdown.scope3}
+              </p>
+            </div>
+            <Globe className="h-16 w-16 text-teal-500 opacity-20" />
+          </div>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
