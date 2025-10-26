@@ -69,10 +69,14 @@ router.post('/', async (req, res) => {
       })
     }
 
+    // Get companyId from auth middleware
+    const companyId = req.companyId || req.user?.companyId || req.user?.company?._id || req.user?.company
+    const userId = req.user?._id || req.user?.id
+    
     // Create new metric
     const newMetric = new ESGMetric({
-      companyId: req.user.company,
-      userId: req.user.id,
+      companyId: companyId,
+      userId: userId,
       framework,
       pillar,
       topic,
@@ -120,8 +124,19 @@ router.get('/:id', async (req, res) => {
       })
     }
 
-    // Check if user has access to this metric
-    if (metric.companyId._id.toString() !== req.user.company.toString()) {
+    // Get companyId from auth middleware
+    const companyId = req.companyId || req.user?.companyId
+    
+    // Check access - ensure user can only view their company's metrics
+    const metricCompanyId = metric.companyId?._id?.toString() || metric.companyId?.toString() || metric.companyId
+    const userCompanyId = companyId || req.user?.company?._id?.toString() || req.user?.company?.toString()
+
+    if (metricCompanyId !== userCompanyId) {
+      console.error('Get metric access denied:', {
+        metricCompanyId,
+        userCompanyId,
+        reqCompanyId: companyId
+      })
       return res.status(403).json({
         success: false,
         error: 'Access denied'
@@ -152,8 +167,19 @@ router.put('/:id', async (req, res) => {
       })
     }
 
-    // Check access
-    if (metric.companyId.toString() !== req.user.company.toString()) {
+    // Get companyId from auth middleware
+    const companyId = req.companyId || req.user?.companyId
+    
+    // Check access - ensure user can only update their company's metrics
+    const metricCompanyId = metric.companyId?.toString() || metric.companyId
+    const userCompanyId = companyId || req.user?.company?._id?.toString() || req.user?.company?.toString()
+
+    if (metricCompanyId !== userCompanyId) {
+      console.error('Update metric access denied:', {
+        metricCompanyId,
+        userCompanyId,
+        reqCompanyId: companyId
+      })
       return res.status(403).json({
         success: false,
         error: 'Access denied'
