@@ -25,6 +25,8 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
+# Note: http-proxy-middleware is installed via package.json
+
 # Copy package files
 COPY --chown=nodejs:nodejs package*.json ./
 
@@ -46,7 +48,7 @@ EXPOSE 5500
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:5500/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD node -e "require('http').get('http://localhost:' + process.env.PORT + '/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start the application
-CMD ["node", "index.js"]
+# Start the application with service selector
+CMD ["node", "index.microservices.js"]
