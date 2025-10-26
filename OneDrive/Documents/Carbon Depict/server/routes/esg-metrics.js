@@ -171,23 +171,27 @@ router.put('/:id', async (req, res) => {
     const companyId = req.companyId || req.user?.companyId
     
     // Check access - ensure user can only update their company's metrics
-    const metricCompanyId = metric.companyId?.toString() || metric.companyId
-    const userCompanyId = companyId?.toString() || req.user?.company?._id?.toString() || req.user?.company?.toString() || companyId
+    // Handle both populated and non-populated companyId
+    let metricCompanyId = metric.companyId
+    if (metricCompanyId && typeof metricCompanyId === 'object' && metricCompanyId._id) {
+      metricCompanyId = metricCompanyId._id.toString()
+    } else {
+      metricCompanyId = metricCompanyId?.toString() || metricCompanyId
+    }
+    
+    // Get user's companyId from various possible sources
+    const userCompanyId = companyId?.toString() || 
+                          req.user?.companyId?.toString() || 
+                          req.user?.company?._id?.toString() || 
+                          req.user?.company?.toString()
 
-    console.log('Update metric access check:', {
-      metricCompanyId,
-      userCompanyId,
-      reqCompanyId: companyId,
-      reqCompanyIdType: typeof companyId,
-      metricCompanyIdType: typeof metricCompanyId,
-      userCompanyIdType: typeof userCompanyId
-    })
-
+    // Only check if both values are present
     if (metricCompanyId && userCompanyId && metricCompanyId !== userCompanyId) {
       console.error('Update metric access denied:', {
         metricCompanyId,
         userCompanyId,
-        reqCompanyId: companyId
+        reqCompanyId: companyId,
+        userId: req.user?._id
       })
       return res.status(403).json({
         success: false,
