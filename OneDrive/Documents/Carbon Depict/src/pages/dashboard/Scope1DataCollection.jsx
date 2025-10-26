@@ -1,9 +1,15 @@
-import { useState, useMemo } from 'react'
+// Cache bust 2025-10-23
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Factory, CheckCircle2, Circle, AlertCircle, Info } from 'lucide-react'
+import { ArrowLeft, Factory, CheckCircle2, Circle, AlertCircle, Info } from '@atoms/Icon'
+import { enterpriseAPI } from '../../services/enterpriseAPI'
+import DataEntryManager from '../../components/molecules/DataEntryManager'
 
 export default function Scope1DataCollection() {
   const [currentCategory, setCurrentCategory] = useState('stationaryCombustion')
+  const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [saveMessage, setSaveMessage] = useState('')
   const [formData, setFormData] = useState({
     // Stationary Combustion (10 fuel types)
     stationaryCombustion: {
@@ -18,7 +24,7 @@ export default function Scope1DataCollection() {
       'burning-oil': { name: 'Burning Oil (litres)', value: '', unit: 'litres', completed: false },
       'biofuel-blend': { name: 'Biofuel Blend %', value: '', unit: '%', completed: false },
     },
-    // Mobile Combustion (8 vehicle types)
+    // Mobile Combustion (8 vehicle types) - NOTE: Backend calculator supports dual input methods
     mobileCombustion: {
       'petrol-cars': { name: 'Petrol Cars (litres)', value: '', unit: 'litres', completed: false },
       'diesel-cars': { name: 'Diesel Cars (litres)', value: '', unit: 'litres', completed: false },
@@ -48,6 +54,48 @@ export default function Scope1DataCollection() {
     },
   })
 
+  // Load saved data on component mount
+  useEffect(() => {
+    const loadSavedData = async () => {
+      try {
+        setIsLoading(true)
+        const response = await enterpriseAPI.emissions.getByCategory('scope1', new Date().getFullYear().toString())
+        
+        if (response.data.success && response.data.data) {
+          const savedData = response.data.data
+          
+          // Merge saved data with form structure
+          setFormData(prev => {
+            const mergedData = { ...prev }
+            
+            Object.keys(savedData).forEach(category => {
+              if (mergedData[category]) {
+                Object.keys(savedData[category]).forEach(fieldKey => {
+                  if (mergedData[category][fieldKey]) {
+                    mergedData[category][fieldKey] = {
+                      ...mergedData[category][fieldKey],
+                      value: savedData[category][fieldKey].value,
+                      completed: savedData[category][fieldKey].completed
+                    }
+                  }
+                })
+              }
+            })
+            
+            return mergedData
+          })
+        }
+      } catch (error) {
+        console.error('Error loading saved data:', error)
+        // Don't show error to user, just continue with empty form
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadSavedData()
+  }, [])
+
   const handleInputChange = (category, fieldKey, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -60,6 +108,70 @@ export default function Scope1DataCollection() {
         },
       },
     }))
+  }
+
+  const handleCalculateEmissions = async () => {
+    setIsSaving(true)
+    setSaveMessage('')
+    
+    try {
+      const response = await enterpriseAPI.emissions.calculateAndSave(
+        formData,
+        'scope1',
+        new Date().getFullYear().toString()
+      )
+      
+      if (response.data.success) {
+        const { totalEmissions, calculations, errors } = response.data.data
+        
+        if (errors.length > 0) {
+          setSaveMessage(`⚠️ Calculated ${calculations.length} emissions (${errors.length} errors). Total: ${totalEmissions} kg CO2e`)
+        } else {
+          setSaveMessage(`✅ Successfully calculated ${calculations.length} emissions! Total: ${totalEmissions} kg CO2e`)
+        }
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => {
+          setSaveMessage('')
+        }, 5000)
+      } else {
+        setSaveMessage('❌ Failed to calculate emissions. Please try again.')
+      }
+    } catch (error) {
+      console.error('Calculation error:', error)
+      setSaveMessage(`❌ Error calculating emissions: ${error.response?.data?.error || error.message}`)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSaveProgress = async () => {
+    setIsSaving(true)
+    setSaveMessage('')
+    
+    try {
+      const response = await enterpriseAPI.emissions.bulkSave(
+        formData,
+        'scope1',
+        new Date().getFullYear().toString()
+      )
+      
+      if (response.data.success) {
+        setSaveMessage(`✅ Successfully saved ${response.data.count} emission records!`)
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setSaveMessage('')
+        }, 3000)
+      } else {
+        setSaveMessage('❌ Failed to save data. Please try again.')
+      }
+    } catch (error) {
+      console.error('Save error:', error)
+      setSaveMessage(`❌ Error saving data: ${error.response?.data?.error || error.message}`)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const calculateCategoryProgress = (category) => {
@@ -143,7 +255,30 @@ export default function Scope1DataCollection() {
         </div>
       </div>
 
-      {/* Overall Progress */}
+      {/* Data Entry Manager */}
+      <DataEntryManager
+        formType="emissions"
+        scope="scope1"
+        formData={formData}
+        setFormData={setFormData}
+        onSave={handleCalculateEmissions}
+        isLoading={isSaving}
+      />
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cd-teal mx-auto mb-4"></div>
+            <p className="text-cd-muted">Loading saved data...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content - Only show when not loading */}
+      {!isLoading && (
+        <>
+          {/* Overall Progress */}
       <div className="rounded-lg border border-cd-midnight/20 bg-white p-6 shadow-cd-sm">
         <div className="mb-3 flex items-center justify-between">
           <div>
@@ -341,24 +476,39 @@ export default function Scope1DataCollection() {
               </div>
             )}
 
+            {/* Save Message */}
+            {saveMessage && (
+              <div className={`mt-4 p-3 rounded-lg text-sm font-medium ${
+                saveMessage.includes('✅') 
+                  ? 'bg-green-50 text-green-700 border border-green-200' 
+                  : 'bg-red-50 text-red-700 border border-red-200'
+              }`}>
+                {saveMessage}
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="mt-6 flex gap-4 border-t border-cd-border pt-6">
               <button
-                className="flex-1 rounded-lg bg-cd-midnight px-6 py-3 font-semibold text-white transition-colors hover:bg-cd-midnight/90"
-                onClick={() => alert('Data saved! (API integration pending)')}
+                className="flex-1 rounded-lg bg-cd-midnight px-6 py-3 font-semibold text-white transition-colors hover:bg-cd-midnight/90 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                onClick={handleSaveProgress}
+                disabled={isSaving}
               >
-                Save Progress
+                {isSaving ? 'Saving...' : 'Save Progress'}
               </button>
               <button
-                className="flex-1 rounded-lg border border-cd-border bg-white px-6 py-3 font-semibold text-cd-midnight transition-colors hover:bg-cd-surface"
-                onClick={() => alert('Calculate emissions (API integration pending)')}
+                className="flex-1 rounded-lg border border-cd-border bg-white px-6 py-3 font-semibold text-cd-midnight transition-colors hover:bg-cd-surface disabled:bg-gray-100 disabled:cursor-not-allowed"
+                onClick={handleCalculateEmissions}
+                disabled={isSaving}
               >
-                Calculate Emissions
+                {isSaving ? 'Calculating...' : 'Calculate Emissions'}
               </button>
             </div>
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   )
 }

@@ -1,3 +1,4 @@
+// Cache bust 2025-10-23
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -8,9 +9,12 @@ import {
   Circle,
   FileText,
   Lightbulb,
-  BookOpen
-} from 'lucide-react';
+  BookOpen,
+  Plus
+} from '@atoms/Icon';
 import FrameworkProgressBar from '../../components/molecules/FrameworkProgressBar';
+import ESGDataEntryForm from '../../components/ESGDataEntryForm';
+import { apiClient } from '../../utils/api';
 import esgDataManager from '../../utils/esgDataManager';
 
 /**
@@ -90,6 +94,8 @@ const GRIDataCollection = () => {
   });
 
   const [activeSection, setActiveSection] = useState('organizationalProfile');
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'form'
+  const [showNewEntryForm, setShowNewEntryForm] = useState(false);
 
   // Calculate overall completion percentage
   const calculateProgress = () => {
@@ -111,6 +117,35 @@ const GRIDataCollection = () => {
   };
 
   const progress = calculateProgress();
+
+  // Handle new entry submission with compliance validation
+  const handleNewEntry = async (formData) => {
+    try {
+      // Save to backend API
+      const response = await apiClient.esgMetrics.create({
+        ...formData,
+        framework: 'GRI',
+        status: 'draft',
+      });
+
+      // Update local state
+      const section = activeSection;
+      const disclosure = formData.disclosure;
+      
+      if (griData[section] && griData[section][disclosure]) {
+        updateField(section, disclosure, formData.value);
+      }
+
+      setShowNewEntryForm(false);
+      alert('Entry saved successfully as draft!');
+      
+      return response.data;
+    } catch (error) {
+      console.error('Failed to save entry:', error);
+      alert('Failed to save entry. Please try again.');
+      return null;
+    }
+  };
 
   // Handle field update and save to localStorage
   const updateField = (section, fieldKey, value) => {
@@ -163,6 +198,30 @@ const GRIDataCollection = () => {
               </div>
             </div>
             <div className="flex gap-2">
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                    viewMode === 'list'
+                      ? 'bg-teal text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Checklist
+                </button>
+                <button
+                  onClick={() => setViewMode('form')}
+                  className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                    viewMode === 'form'
+                      ? 'bg-teal text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Enhanced Form
+                </button>
+              </div>
+              
               <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                 <Download className="w-4 h-4" />
                 Export
@@ -236,7 +295,31 @@ const GRIDataCollection = () => {
 
           {/* Form Content */}
           <div className="col-span-9">
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            {viewMode === 'form' ? (
+              /* Enhanced Form View with AI Validation */
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="mb-6 pb-6 border-b border-gray-200">
+                  <h2 className="text-xl font-bold text-midnight mb-2">
+                    Enhanced GRI Data Entry with AI Compliance
+                  </h2>
+                  <div className="flex items-start gap-2 text-sm text-gray-600">
+                    <Lightbulb className="w-4 h-4 mt-0.5 text-cedar" />
+                    <p>
+                      Enter your ESG data below and receive real-time compliance validation against GRI Standards 2021.
+                      The system will analyze completeness, accuracy, and provide recommendations.
+                    </p>
+                  </div>
+                </div>
+
+                <ESGDataEntryForm
+                  framework="GRI"
+                  onSubmit={handleNewEntry}
+                  initialData={{}}
+                />
+              </div>
+            ) : (
+              /* Original Checklist View */
+              <div className="bg-white rounded-lg shadow-sm p-6">
               {/* Section Header */}
               <div className="mb-6 pb-6 border-b border-gray-200">
                 <h2 className="text-xl font-bold text-midnight mb-2">
@@ -315,6 +398,7 @@ const GRIDataCollection = () => {
                 </button>
               </div>
             </div>
+          )}
           </div>
         </div>
       </div>

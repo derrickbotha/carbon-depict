@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// Cache bust 2025-10-23
+import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -17,9 +18,13 @@ import {
   BarChart3,
   Factory,
   Leaf,
-  Award
-} from 'lucide-react';
+  Award,
+  Plus
+} from '@atoms/Icon';
 import FrameworkProgressBar from '../../components/molecules/FrameworkProgressBar';
+import ESGDataEntryForm from '../../components/ESGDataEntryForm';
+import apiClient from '../../utils/api';
+import esgDataManager from '../../utils/esgDataManager';
 
 /**
  * CDP Data Collection Page
@@ -158,8 +163,10 @@ const CDPDataCollection = () => {
   });
 
   const [activeModule, setActiveModule] = useState('introduction');
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'form'
+  const [showNewEntryForm, setShowNewEntryForm] = useState(false);
 
-  const calculateProgress = () => {
+  const progress = useMemo(() => {
     let totalFields = 0;
     let completedFields = 0;
 
@@ -175,11 +182,37 @@ const CDPDataCollection = () => {
       completed: completedFields,
       total: totalFields,
     };
-  };
+  }, [cdpData]);
 
-  const progress = calculateProgress();
+  const handleNewEntry = useCallback(async (formData) => {
+    try {
+      // Save to backend API
+      const response = await apiClient.esgMetrics.create({
+        ...formData,
+        framework: 'CDP',
+        status: 'draft',
+      });
 
-  const updateField = (module, fieldKey, value) => {
+      // Update local state if matching field exists
+      const module = activeModule;
+      const disclosure = formData.disclosure;
+      
+      if (cdpData[module] && cdpData[module][disclosure]) {
+        updateField(module, disclosure, formData.value);
+      }
+
+      setShowNewEntryForm(false);
+      alert('Entry saved successfully as draft!');
+      
+      return response.data;
+    } catch (error) {
+      console.error('Failed to save entry:', error);
+      alert('Failed to save entry. Please try again.');
+      return null;
+    }
+  }, [activeModule, cdpData]);
+
+  const updateField = useCallback((module, fieldKey, value) => {
     setCdpData(prev => ({
       ...prev,
       [module]: {
@@ -191,7 +224,7 @@ const CDPDataCollection = () => {
         },
       },
     }));
-  };
+  }, []);
 
   const moduleConfig = {
     introduction: { title: 'C0: Introduction', icon: FileText, color: 'text-gray-700', maxScore: 0 },
@@ -220,7 +253,7 @@ const CDPDataCollection = () => {
                 to="/dashboard/esg"
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <ArrowLeft className="w-5 h-5 text-gray-600" />
+                <ArrowLeft className="w-5 h-5 text-gray-600" strokeWidth={2} />
               </Link>
               <div>
                 <h1 className="text-2xl font-bold text-midnight">CDP Climate Change Questionnaire</h1>
@@ -230,12 +263,36 @@ const CDPDataCollection = () => {
               </div>
             </div>
             <div className="flex gap-2">
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                    viewMode === 'list'
+                      ? 'bg-teal text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Checklist
+                </button>
+                <button
+                  onClick={() => setViewMode('form')}
+                  className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                    viewMode === 'form'
+                      ? 'bg-teal text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Enhanced Form
+                </button>
+              </div>
+              
               <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                <Download className="w-4 h-4" />
+                <Download className="w-4 h-4" strokeWidth={2} />
                 Export Response
               </button>
               <button className="px-4 py-2 bg-teal text-white rounded-lg text-sm font-medium hover:bg-opacity-90 flex items-center gap-2">
-                <Save className="w-4 h-4" />
+                <Save className="w-4 h-4" strokeWidth={2} />
                 Save Progress
               </button>
             </div>
@@ -280,9 +337,9 @@ const CDPDataCollection = () => {
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-medium">{config.title}</span>
                         {moduleProgress === 100 ? (
-                          <CheckCircle2 className="w-4 h-4 text-mint" />
+                          <CheckCircle2 className="w-4 h-4 text-mint" strokeWidth={2} />
                         ) : (
-                          <Circle className="w-4 h-4" />
+                          <Circle className="w-4 h-4" strokeWidth={2} />
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-xs opacity-75">
@@ -331,11 +388,35 @@ const CDPDataCollection = () => {
 
           {/* Form Content */}
           <div className="col-span-9">
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            {viewMode === 'form' ? (
+              /* Enhanced Form View with AI Validation */
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="mb-6 pb-6 border-b border-gray-200">
+                  <h2 className="text-xl font-bold text-midnight mb-2">
+                    Enhanced CDP Data Entry with AI Compliance
+                  </h2>
+                  <div className="flex items-start gap-2 text-sm text-gray-600">
+                    <Lightbulb className="w-4 h-4 mt-0.5 text-cedar" strokeWidth={2} />
+                    <p>
+                      Enter your climate disclosure data and receive real-time compliance validation against CDP scoring methodology.
+                      The system will analyze completeness, accuracy, and provide recommendations to improve your CDP score.
+                    </p>
+                  </div>
+                </div>
+
+                <ESGDataEntryForm
+                  framework="CDP"
+                  onSubmit={handleNewEntry}
+                  initialData={{}}
+                />
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="mb-6 pb-6 border-b border-gray-200">
                 <div className="flex items-start gap-3">
                   {React.createElement(moduleConfig[activeModule].icon, {
                     className: `w-6 h-6 ${moduleConfig[activeModule].color}`,
+                    strokeWidth: 2,
                   })}
                   <div className="flex-1">
                     <h2 className="text-xl font-bold text-midnight mb-2">
@@ -355,9 +436,9 @@ const CDPDataCollection = () => {
                   <div key={key} className="space-y-2">
                     <label className="flex items-center gap-2 text-sm font-medium text-midnight">
                       {field.completed ? (
-                        <CheckCircle2 className="w-4 h-4 text-teal" />
+                        <CheckCircle2 className="w-4 h-4 text-teal" strokeWidth={2} />
                       ) : (
-                        <Circle className="w-4 h-4 text-gray-300" />
+                        <Circle className="w-4 h-4 text-gray-300" strokeWidth={2} />
                       )}
                       <span className="flex-1">
                         <span className="text-teal font-mono">{key.toUpperCase()}</span>: {field.name}
@@ -374,6 +455,7 @@ const CDPDataCollection = () => {
                 ))}
               </div>
             </div>
+            )}
           </div>
         </div>
       </div>

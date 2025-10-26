@@ -1,27 +1,50 @@
+// Cache bust 2025-10-23
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Input } from '@atoms/Input'
 import { LoadingButton, OutlineButton } from '@atoms/Button'
-import { Mail, Eye, EyeOff } from '@atoms/Icon'
+import { Mail, Eye, EyeOff, AlertCircle } from '@atoms/Icon'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   })
   const navigate = useNavigate()
+  const location = useLocation()
+  const { login } = useAuth()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setError(null)
 
-    // TODO: Implement actual login logic
-    setTimeout(() => {
+    console.log('=== LOGIN ATTEMPT ===')
+    console.log('Email:', formData.email)
+    console.log('Password length:', formData.password.length)
+    console.log('Calling login function...')
+
+    const result = await login(formData.email, formData.password)
+
+    console.log('=== LOGIN RESULT ===')
+    console.log('Success:', result.success)
+    console.log('Error:', result.error)
+    console.log('Full result:', result)
+
+    if (result.success) {
+      console.log('✅ Login successful! Redirecting...')
+      // Redirect to the page they tried to visit or dashboard
+      const from = location.state?.from?.pathname || '/dashboard'
+      navigate(from, { replace: true })
+    } else {
+      console.error('❌ Login failed:', result.error)
+      setError(result.error)
       setLoading(false)
-      navigate('/dashboard')
-    }, 1500)
+    }
   }
 
   const handleChange = (e) => {
@@ -47,6 +70,16 @@ export default function LoginPage() {
 
         {/* Login Form */}
         <div className="rounded-lg bg-white p-8 shadow-cd-md">
+          {error && (
+            <div className="mb-4 rounded-lg bg-red-50 p-4 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" strokeWidth={2} />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-800">Login Failed</p>
+                  <p className="text-sm text-red-700 mt-1">{error}</p>
+                </div>
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input
               label="Email address"
@@ -117,7 +150,7 @@ export default function LoginPage() {
 
             <div className="mt-6 grid gap-3">
               <OutlineButton className="w-full flex items-center justify-center gap-2">
-                <Mail className="h-5 w-5" />
+                <Mail strokeWidth={2} />
                 Google
               </OutlineButton>
             </div>
@@ -134,3 +167,4 @@ export default function LoginPage() {
     </div>
   )
 }
+

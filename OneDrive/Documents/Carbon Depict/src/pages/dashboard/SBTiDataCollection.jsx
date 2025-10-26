@@ -1,3 +1,4 @@
+// Cache bust 2025-10-23
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -9,9 +10,14 @@ import {
   Target,
   TrendingDown,
   Calendar,
-  Upload
-} from 'lucide-react';
+  Upload,
+  Lightbulb,
+  Plus
+} from '@atoms/Icon';
 import FrameworkProgressBar from '../../components/molecules/FrameworkProgressBar';
+import ESGDataEntryForm from '../../components/ESGDataEntryForm';
+import apiClient from '../../utils/api';
+import esgDataManager from '../../utils/esgDataManager';
 
 /**
  * SBTi Data Collection Page
@@ -67,6 +73,7 @@ const SBTiDataCollection = () => {
   });
 
   const [activeSection, setActiveSection] = useState('companyInfo');
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'form'
 
   const calculateProgress = () => {
     let totalFields = 0;
@@ -87,6 +94,31 @@ const SBTiDataCollection = () => {
   };
 
   const progress = calculateProgress();
+
+  // Handle new entry submission with compliance validation
+  const handleNewEntry = async (formData) => {
+    try {
+      const response = await apiClient.esgMetrics.create({
+        ...formData,
+        framework: 'SBTI',
+        status: 'draft',
+      });
+
+      const section = activeSection;
+      const disclosure = formData.disclosure;
+      
+      if (sbtiData[section] && sbtiData[section][disclosure]) {
+        updateField(section, disclosure, formData.value);
+      }
+
+      alert('Entry saved successfully as draft!');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to save entry:', error);
+      alert('Failed to save entry. Please try again.');
+      return null;
+    }
+  };
 
   const updateField = (section, fieldKey, value) => {
     setSbtiData(prev => ({
@@ -132,6 +164,30 @@ const SBTiDataCollection = () => {
               </div>
             </div>
             <div className="flex gap-2">
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                    viewMode === 'list'
+                      ? 'bg-teal text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Checklist
+                </button>
+                <button
+                  onClick={() => setViewMode('form')}
+                  className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                    viewMode === 'form'
+                      ? 'bg-teal text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Enhanced Form
+                </button>
+              </div>
+              
               <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                 <Upload className="w-4 h-4" />
                 Submit to SBTi
@@ -217,7 +273,30 @@ const SBTiDataCollection = () => {
 
           {/* Form Content */}
           <div className="col-span-9">
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            {viewMode === 'form' ? (
+              /* Enhanced Form View with AI Validation */
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="mb-6 pb-6 border-b border-gray-200">
+                  <h2 className="text-xl font-bold text-midnight mb-2">
+                    Enhanced SBTi Data Entry with AI Compliance
+                  </h2>
+                  <div className="flex items-start gap-2 text-sm text-gray-600">
+                    <Lightbulb className="w-4 h-4 mt-0.5 text-cedar" />
+                    <p>
+                      Enter your science-based targets data and receive real-time compliance validation against SBTi Net-Zero Standard.
+                      The system will verify alignment with 1.5°C pathways and coverage requirements.
+                    </p>
+                  </div>
+                </div>
+
+                <ESGDataEntryForm
+                  framework="SBTI"
+                  onSubmit={handleNewEntry}
+                  initialData={{}}
+                />
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="mb-6 pb-6 border-b border-gray-200">
                 <h2 className="text-xl font-bold text-midnight mb-2">
                   {sectionTitles[activeSection]}
@@ -256,6 +335,7 @@ const SBTiDataCollection = () => {
                 ))}
               </div>
             </div>
+            )}
           </div>
         </div>
       </div>

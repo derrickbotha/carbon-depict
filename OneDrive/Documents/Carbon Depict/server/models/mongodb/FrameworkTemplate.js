@@ -35,7 +35,6 @@ const frameworkTemplateSchema = new mongoose.Schema(
     pillar: {
       type: String,
       enum: ['Environmental', 'Social', 'Governance', 'Cross-Cutting'],
-      index: true,
     },
     standardNumber: {
       type: String,

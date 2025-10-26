@@ -1,3 +1,4 @@
+// Cache bust 2025-10-23
 import { Input, Select } from '@atoms/Input'
 import { PrimaryButton } from '@atoms/Button'
 import { User, Building, Globe, Bell } from '@atoms/Icon'
@@ -32,7 +33,7 @@ export default function SettingsPage() {
       {/* Company Profile */}
       <div className="rounded-lg border border-cd-border bg-white p-6 shadow-cd-sm">
         <div className="mb-6 flex items-center gap-3">
-          <Building className="h-6 w-6 text-cd-midnight" />
+          <Building strokeWidth={2} />
           <h2 className="text-xl font-semibold text-cd-text">Company Profile</h2>
         </div>
         <form className="space-y-6">
@@ -62,7 +63,7 @@ export default function SettingsPage() {
       {/* User Profile */}
       <div className="rounded-lg border border-cd-border bg-white p-6 shadow-cd-sm">
         <div className="mb-6 flex items-center gap-3">
-          <User className="h-6 w-6 text-cd-midnight" />
+          <User strokeWidth={2} />
           <h2 className="text-xl font-semibold text-cd-text">User Profile</h2>
         </div>
         <form className="space-y-6">
@@ -90,7 +91,7 @@ export default function SettingsPage() {
       {/* Notifications */}
       <div className="rounded-lg border border-cd-border bg-white p-6 shadow-cd-sm">
         <div className="mb-6 flex items-center gap-3">
-          <Bell className="h-6 w-6 text-cd-midnight" />
+          <Bell strokeWidth={2} />
           <h2 className="text-xl font-semibold text-cd-text">Notifications</h2>
         </div>
         <div className="space-y-4">
@@ -132,7 +133,7 @@ export default function SettingsPage() {
       {/* Regional Settings */}
       <div className="rounded-lg border border-cd-border bg-white p-6 shadow-cd-sm">
         <div className="mb-6 flex items-center gap-3">
-          <Globe className="h-6 w-6 text-cd-midnight" />
+          <Globe strokeWidth={2} />
           <h2 className="text-xl font-semibold text-cd-text">Regional Settings</h2>
         </div>
         <form className="space-y-6">
@@ -159,3 +160,4 @@ export default function SettingsPage() {
     </div>
   )
 }
+

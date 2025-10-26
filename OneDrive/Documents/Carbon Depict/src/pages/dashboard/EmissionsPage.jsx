@@ -1,3 +1,4 @@
+// Cache bust 2025-10-23
 import { useState } from 'react'
 import { Input, Select, Textarea } from '@atoms/Input'
 import { PrimaryButton, OutlineButton } from '@atoms/Button'
@@ -37,24 +38,24 @@ export default function EmissionsPage() {
         </div>
         <div className="flex gap-3">
           <OutlineButton className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
+            <Upload strokeWidth={2} />
             Import Excel
           </OutlineButton>
           <PrimaryButton
             className="flex items-center gap-2"
             onClick={() => setShowForm(!showForm)}
           >
-            <Plus className="h-5 w-5" />
+            <Plus strokeWidth={2} />
             Add Entry
           </PrimaryButton>
         </div>
       </div>
 
       {/* Info Alert */}
-      <Alert type="info" title="WRI-Compliant Calculations">
-        All calculations use DEFRA 2025 emission factors and follow World Resources Institute
-        (WRI) methodology for transparent, auditable results.
-      </Alert>
+      <Alert strokeWidth={2} />
+      <div className="text-cd-muted text-sm mt-2">
+        All calculations use DEFRA 2025 emission factors and follow World Resources Institute (WRI) methodology for transparent, auditable results.
+      </div>
 
       {/* Add Entry Form */}
       {showForm && (
@@ -214,3 +215,4 @@ export default function EmissionsPage() {
     </div>
   )
 }
+

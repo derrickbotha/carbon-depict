@@ -1,32 +1,55 @@
+# Dependencies
 node_modules/
-dist/
-build/
+package-lock.json
+yarn.lock
+
+# Environment variables
 .env
 .env.local
 .env.production
+.env.development
 
-# Logs
-logs/
+# Build outputs
+dist/
+build/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Testing
-coverage/
-.nyc_output/
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Production
-*.zip
-*.tar.gz
+# Database
+*.db
+*.sqlite
+
+# Backups
+*.backup
+*.bak
+
+# Server logs
+server/*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Windows specific
+desktop.ini
+
+# OneDrive specific
+OneDrive_*
+
+# Test files
+test/
+__tests__/
+
+# Coverage
+coverage/

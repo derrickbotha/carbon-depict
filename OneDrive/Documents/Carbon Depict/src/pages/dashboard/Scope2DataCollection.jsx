@@ -1,18 +1,27 @@
-import { useState, useMemo } from 'react'
+// Cache bust 2025-10-23
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Zap, CheckCircle2, Circle, AlertCircle, Info } from 'lucide-react'
+import { ArrowLeft, Zap, CheckCircle2, Circle, AlertCircle, Info } from '@atoms/Icon'
+import { enterpriseAPI } from '../../services/enterpriseAPI'
+import DataEntryManager from '../../components/molecules/DataEntryManager'
 
 export default function Scope2DataCollection() {
   const [currentCategory, setCurrentCategory] = useState('purchasedElectricity')
+  const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [saveMessage, setSaveMessage] = useState('')
   const [formData, setFormData] = useState({
-    // Purchased Electricity (6 fields)
+    // Purchased Electricity - IMPROVED FOR GHG PROTOCOL DUAL REPORTING
     purchasedElectricity: {
-      'grid-electricity-kwh': { name: 'Grid Electricity (kWh)', value: '', unit: 'kWh', completed: false },
-      'renewable-tariff': { name: 'Renewable Tariff (kWh)', value: '', unit: 'kWh', completed: false },
-      'green-certificates': { name: 'Green Energy Certificates (kWh)', value: '', unit: 'kWh', completed: false },
-      'supplier-name': { name: 'Electricity Supplier', value: '', unit: 'text', completed: false },
-      'location-based': { name: 'Location-Based Method (kWh)', value: '', unit: 'kWh', completed: false },
-      'market-based': { name: 'Market-Based Method (kWh)', value: '', unit: 'kWh', completed: false },
+      consumption: { name: 'Total Electricity Consumption (kWh)', value: '', unit: 'kWh', completed: false },
+      region: { name: 'Region', value: 'uk', unit: 'select', options: ['uk', 'eu', 'us', 'china', 'india', 'global'], completed: false },
+      method: { name: 'Calculation Method', value: 'location', unit: 'select', options: ['location', 'market'], completed: false },
+      supplierName: { name: 'Electricity Supplier', value: '', unit: 'text', completed: false },
+      // Certificate fields for market-based method
+      certificateValid: { name: 'Certificate Valid?', value: 'false', unit: 'boolean', completed: false },
+      certificateRetired: { name: 'Certificate Retired?', value: 'false', unit: 'boolean', completed: false },
+      certificateFactor: { name: 'Certificate Factor (kgCO2e/kWh)', value: '', unit: 'number', completed: false },
+      certificateSource: { name: 'Certificate Source', value: '', unit: 'text', completed: false },
     },
     // Purchased Heat/Steam (4 fields)
     purchasedHeat: {
@@ -34,6 +43,48 @@ export default function Scope2DataCollection() {
     },
   })
 
+  // Load saved data on component mount
+  useEffect(() => {
+    const loadSavedData = async () => {
+      try {
+        setIsLoading(true)
+        const response = await enterpriseAPI.emissions.getByCategory('scope2', new Date().getFullYear().toString())
+        
+        if (response.data.success && response.data.data) {
+          const savedData = response.data.data
+          
+          // Merge saved data with form structure
+          setFormData(prev => {
+            const mergedData = { ...prev }
+            
+            Object.keys(savedData).forEach(category => {
+              if (mergedData[category]) {
+                Object.keys(savedData[category]).forEach(fieldKey => {
+                  if (mergedData[category][fieldKey]) {
+                    mergedData[category][fieldKey] = {
+                      ...mergedData[category][fieldKey],
+                      value: savedData[category][fieldKey].value,
+                      completed: savedData[category][fieldKey].completed
+                    }
+                  }
+                })
+              }
+            })
+            
+            return mergedData
+          })
+        }
+      } catch (error) {
+        console.error('Error loading saved data:', error)
+        // Don't show error to user, just continue with empty form
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadSavedData()
+  }, [])
+
   const handleInputChange = (category, fieldKey, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -42,10 +93,74 @@ export default function Scope2DataCollection() {
         [fieldKey]: {
           ...prev[category][fieldKey],
           value: value,
-          completed: value.trim() !== '',
+          completed: value && String(value).trim() !== '',
         },
       },
     }))
+  }
+
+  const handleCalculateEmissions = async () => {
+    setIsSaving(true)
+    setSaveMessage('')
+    
+    try {
+      const response = await enterpriseAPI.emissions.calculateAndSave(
+        formData,
+        'scope2',
+        new Date().getFullYear().toString()
+      )
+      
+      if (response.data.success) {
+        const { totalEmissions, calculations, errors } = response.data.data
+        
+        if (errors.length > 0) {
+          setSaveMessage(`⚠️ Calculated ${calculations.length} emissions (${errors.length} errors). Total: ${totalEmissions} kg CO2e`)
+        } else {
+          setSaveMessage(`✅ Successfully calculated ${calculations.length} emissions! Total: ${totalEmissions} kg CO2e`)
+        }
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => {
+          setSaveMessage('')
+        }, 5000)
+      } else {
+        setSaveMessage('❌ Failed to calculate emissions. Please try again.')
+      }
+    } catch (error) {
+      console.error('Calculation error:', error)
+      setSaveMessage(`❌ Error calculating emissions: ${error.response?.data?.error || error.message}`)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSaveProgress = async () => {
+    setIsSaving(true)
+    setSaveMessage('')
+    
+    try {
+      const response = await enterpriseAPI.emissions.bulkSave(
+        formData,
+        'scope2',
+        new Date().getFullYear().toString()
+      )
+      
+      if (response.data.success) {
+        setSaveMessage(`✅ Successfully saved ${response.data.count} emission records!`)
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setSaveMessage('')
+        }, 3000)
+      } else {
+        setSaveMessage('❌ Failed to save data. Please try again.')
+      }
+    } catch (error) {
+      console.error('Save error:', error)
+      setSaveMessage(`❌ Error saving data: ${error.response?.data?.error || error.message}`)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const calculateCategoryProgress = (category) => {
@@ -114,11 +229,11 @@ export default function Scope2DataCollection() {
             to="/dashboard/emissions"
             className="flex h-10 w-10 items-center justify-center rounded-lg border border-cd-border bg-white text-cd-muted transition-colors hover:bg-cd-surface hover:text-cd-midnight"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5" strokeWidth={2} />
           </Link>
           <div>
             <div className="mb-1 flex items-center gap-2">
-              <Zap className="h-6 w-6 text-cd-teal" />
+              <Zap className="h-6 w-6 text-cd-teal" strokeWidth={2} />
               <span className="text-sm font-semibold text-cd-teal">SCOPE 2</span>
             </div>
             <h1 className="text-3xl font-bold text-cd-text">Energy Indirect Emissions Data Collection</h1>
@@ -129,7 +244,30 @@ export default function Scope2DataCollection() {
         </div>
       </div>
 
-      {/* Overall Progress */}
+      {/* Data Entry Manager */}
+      <DataEntryManager
+        formType="emissions"
+        scope="scope2"
+        formData={formData}
+        setFormData={setFormData}
+        onSave={handleCalculateEmissions}
+        isLoading={isSaving}
+      />
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cd-teal mx-auto mb-4"></div>
+            <p className="text-cd-muted">Loading saved data...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content - Only show when not loading */}
+      {!isLoading && (
+        <>
+          {/* Overall Progress */}
       <div className="rounded-lg border border-cd-teal/20 bg-white p-6 shadow-cd-sm">
         <div className="mb-3 flex items-center justify-between">
           <div>
@@ -148,7 +286,7 @@ export default function Scope2DataCollection() {
           />
         </div>
         <div className="mt-2 flex items-center gap-2 text-sm text-cd-muted">
-          <CheckCircle2 className="h-4 w-4" />
+          <CheckCircle2 className="h-4 w-4" strokeWidth={2} />
           <span>
             {Object.values(formData).reduce((sum, cat) => sum + Object.values(cat).filter((f) => f.completed).length, 0)} of 15 fields completed
           </span>
@@ -200,7 +338,7 @@ export default function Scope2DataCollection() {
             {/* Location vs Market-Based Info */}
             <div className="mt-6 rounded-lg border border-cd-teal/20 bg-cd-teal/5 p-4">
               <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-cd-midnight">
-                <Info className="h-4 w-4" />
+                <Info className="h-4 w-4" strokeWidth={2} />
                 Dual Reporting
               </div>
               <p className="text-xs text-cd-muted">
@@ -223,7 +361,7 @@ export default function Scope2DataCollection() {
                 </div>
               </div>
               <div className="mt-3 flex items-center gap-2 text-sm text-cd-muted">
-                <AlertCircle className="h-4 w-4" />
+                <AlertCircle className="h-4 w-4" strokeWidth={2} />
                 <span>Refer to your utility bills or energy invoices for consumption data</span>
               </div>
             </div>
@@ -234,9 +372,9 @@ export default function Scope2DataCollection() {
                 <div key={fieldKey} className="flex items-center gap-4">
                   <div className="flex-shrink-0">
                     {field.completed ? (
-                      <CheckCircle2 className="h-5 w-5 text-cd-mint" />
+                      <CheckCircle2 className="h-5 w-5 text-cd-mint" strokeWidth={2} />
                     ) : (
-                      <Circle className="h-5 w-5 text-gray-300" />
+                      <Circle className="h-5 w-5 text-gray-300" strokeWidth={2} />
                     )}
                   </div>
                   <div className="flex-1">
@@ -252,6 +390,27 @@ export default function Scope2DataCollection() {
                           className="flex-1 rounded-lg border border-cd-border bg-white px-4 py-2 text-cd-text placeholder-cd-muted/50 focus:border-cd-teal focus:outline-none focus:ring-2 focus:ring-cd-teal/20"
                           placeholder="Enter supplier name"
                         />
+                      ) : field.unit === 'select' ? (
+                        <select
+                          value={field.value}
+                          onChange={(e) => handleInputChange(currentCategory, fieldKey, e.target.value)}
+                          className="flex-1 rounded-lg border border-cd-border bg-white px-4 py-2 text-cd-text focus:border-cd-teal focus:outline-none focus:ring-2 focus:ring-cd-teal/20"
+                        >
+                          {field.options?.map((option) => (
+                            <option key={option} value={option}>
+                              {option.charAt(0).toUpperCase() + option.slice(1)}
+                            </option>
+                          ))}
+                        </select>
+                      ) : field.unit === 'boolean' ? (
+                        <select
+                          value={field.value}
+                          onChange={(e) => handleInputChange(currentCategory, fieldKey, e.target.value)}
+                          className="flex-1 rounded-lg border border-cd-border bg-white px-4 py-2 text-cd-text focus:border-cd-teal focus:outline-none focus:ring-2 focus:ring-cd-teal/20"
+                        >
+                          <option value="false">No</option>
+                          <option value="true">Yes</option>
+                        </select>
                       ) : (
                         <>
                           <input
@@ -278,7 +437,7 @@ export default function Scope2DataCollection() {
             {currentCategory === 'purchasedElectricity' && (
               <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
                 <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-900">
-                  <Info className="h-4 w-4" />
+                  <Info className="h-4 w-4" strokeWidth={2} />
                   Purchased Electricity Guidance
                 </div>
                 <ul className="space-y-1 text-xs text-blue-800">
@@ -295,7 +454,7 @@ export default function Scope2DataCollection() {
             {currentCategory === 'purchasedHeat' && (
               <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
                 <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-900">
-                  <Info className="h-4 w-4" />
+                  <Info className="h-4 w-4" strokeWidth={2} />
                   Purchased Heat/Steam Guidance
                 </div>
                 <ul className="space-y-1 text-xs text-blue-800">
@@ -311,7 +470,7 @@ export default function Scope2DataCollection() {
             {currentCategory === 'purchasedCooling' && (
               <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
                 <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-900">
-                  <Info className="h-4 w-4" />
+                  <Info className="h-4 w-4" strokeWidth={2} />
                   Purchased Cooling Guidance
                 </div>
                 <ul className="space-y-1 text-xs text-blue-800">
@@ -327,7 +486,7 @@ export default function Scope2DataCollection() {
             {currentCategory === 'transmissionLosses' && (
               <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
                 <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-900">
-                  <Info className="h-4 w-4" />
+                  <Info className="h-4 w-4" strokeWidth={2} />
                   Transmission & Distribution Losses Guidance
                 </div>
                 <ul className="space-y-1 text-xs text-blue-800">
@@ -340,24 +499,39 @@ export default function Scope2DataCollection() {
               </div>
             )}
 
+            {/* Save Message */}
+            {saveMessage && (
+              <div className={`mt-4 p-3 rounded-lg text-sm font-medium ${
+                saveMessage.includes('✅') 
+                  ? 'bg-green-50 text-green-700 border border-green-200' 
+                  : 'bg-red-50 text-red-700 border border-red-200'
+              }`}>
+                {saveMessage}
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="mt-6 flex gap-4 border-t border-cd-border pt-6">
               <button
-                className="flex-1 rounded-lg bg-cd-teal px-6 py-3 font-semibold text-white transition-colors hover:bg-cd-teal/90"
-                onClick={() => alert('Data saved! (API integration pending)')}
+                className="flex-1 rounded-lg bg-cd-teal px-6 py-3 font-semibold text-white transition-colors hover:bg-cd-teal/90 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                onClick={handleSaveProgress}
+                disabled={isSaving}
               >
-                Save Progress
+                {isSaving ? 'Saving...' : 'Save Progress'}
               </button>
               <button
-                className="flex-1 rounded-lg border border-cd-border bg-white px-6 py-3 font-semibold text-cd-teal transition-colors hover:bg-cd-surface"
-                onClick={() => alert('Calculate emissions (API integration pending)')}
+                className="flex-1 rounded-lg border border-cd-border bg-white px-6 py-3 font-semibold text-cd-teal transition-colors hover:bg-cd-surface disabled:bg-gray-100 disabled:cursor-not-allowed"
+                onClick={handleCalculateEmissions}
+                disabled={isSaving}
               >
-                Calculate Emissions
+                {isSaving ? 'Calculating...' : 'Calculate Emissions'}
               </button>
             </div>
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   )
 }

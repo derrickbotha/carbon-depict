@@ -61,7 +61,6 @@ const incidentLogSchema = new mongoose.Schema(
     pillar: {
       type: String,
       enum: ['Environmental', 'Social', 'Governance'],
-      index: true,
     },
     severity: {
       type: String,
@@ -225,7 +224,6 @@ const incidentLogSchema = new mongoose.Schema(
       required: true,
       enum: ['open', 'under-investigation', 'remediation', 'closed', 'reopened'],
       default: 'open',
-      index: true,
     },
     closureDate: {
       type: Date,

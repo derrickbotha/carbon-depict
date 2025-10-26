@@ -15,7 +15,9 @@ import {
   Building2,
   Globe2,
   ArrowRight
-} from 'lucide-react'
+  ,
+  Check
+} from '@atoms/Icon'
 import esgDataManager from '../../utils/esgDataManager'
 
 const ESGFrameworksPage = () => {

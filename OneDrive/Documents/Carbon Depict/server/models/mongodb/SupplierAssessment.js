@@ -245,7 +245,6 @@ const supplierAssessmentSchema = new mongoose.Schema(
     approvalStatus: {
       type: String,
       enum: ['approved', 'conditional', 'rejected', 'under-review'],
-      index: true,
     },
     approvedBy: {
       type: String,

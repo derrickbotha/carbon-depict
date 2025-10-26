@@ -1,5 +1,6 @@
+// Cache bust 2025-10-23
 import React from 'react';
-import { CheckCircle2, Circle, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Circle, AlertCircle, Check } from '@atoms/Icon';
 
 /**
  * Framework Progress Bar Component
@@ -30,9 +31,9 @@ const FrameworkProgressBar = ({
   };
 
   const getIcon = () => {
-    if (completionPercentage >= 80) return <CheckCircle2 className="w-4 h-4" />;
+    if (completionPercentage >= 80) return <Check strokeWidth={2} />;
     if (completionPercentage >= 25) return <Circle className="w-4 h-4" />;
-    return <AlertCircle className="w-4 h-4" />;
+    return <AlertCircle strokeWidth={2} />;
   };
 
   const heightClass = size === 'sm' ? 'h-2' : size === 'lg' ? 'h-4' : 'h-3';
@@ -78,3 +79,4 @@ const FrameworkProgressBar = ({
 };
 
 export default FrameworkProgressBar;
+

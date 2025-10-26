@@ -1,3 +1,4 @@
+// Cache bust 2025-10-23
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white py-20">
@@ -44,3 +45,4 @@ export default function AboutPage() {
     </div>
   )
 }
+

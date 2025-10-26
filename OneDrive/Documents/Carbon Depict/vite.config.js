@@ -19,6 +19,12 @@ export default defineConfig({
   },
   server: {
     port: 3500,
+    hmr: {
+      overlay: true,
+      protocol: 'ws',
+      host: 'localhost',
+      port: 3500,
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:5500',
@@ -38,5 +44,9 @@ export default defineConfig({
         },
       },
     },
+  },
+  // PWA Configuration
+  define: {
+    '__APP_VERSION__': JSON.stringify(process.env.npm_package_version),
   },
 })

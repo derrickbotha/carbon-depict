@@ -1,8 +1,138 @@
+// Cache bust 2025-10-23
 /**
  * Icon Component Wrapper
  * Uses lucide-react for consistent icon library
  * This file re-exports commonly used icons for the app
+ * 
+ * Default icon configuration:
+ * - strokeWidth: 2 (consistent line weight)
+ * - size: Controlled by className (h-5 w-5 for default)
  */
+
+import {
+  // Navigation
+  Menu,
+  X,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  ArrowRight,
+  ArrowLeft,
+  
+  // Actions
+  Plus,
+  Minus,
+  Edit,
+  Edit2,
+  Edit3,
+  Trash,
+  Trash2,
+  Save,
+  Download,
+  Upload,
+  Search,
+  Filter,
+  RefreshCw,
+  MoreVertical,
+  MoreHorizontal,
+  
+  // Status
+  Check,
+  CheckCircle,
+  CheckCircle2,
+  AlertCircle,
+  AlertTriangle,
+  AlertOctagon,
+  Info,
+  XCircle,
+  Circle,
+  
+  // Dashboard & Analytics
+  LayoutDashboard,
+  BarChart,
+  BarChart2,
+  BarChart3,
+  PieChart,
+  LineChart,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Target,
+  Award,
+  Shield,
+  
+  // Emission & Environmental
+  Truck,
+  Zap,
+  Droplet,
+  Droplets,
+  Wind,
+  Flame,
+  Factory,
+  Leaf,
+  TreeDeciduous,
+  Snowflake,
+  TreePine,
+  Recycle,
+  Cloud,
+  Thermometer,
+  
+  // User & Settings
+  User,
+  Users,
+  Users2,
+  UserPlus,
+  Settings,
+  LogOut,
+  LogIn,
+  Bell,
+  Mail,
+  Lock,
+  Unlock,
+  
+  // Files & Documents
+  File,
+  FileText,
+  FolderOpen,
+  Folder,
+  FileSpreadsheet,
+  FileImage,
+  FileDown,
+  FilePlus,
+  
+  // ESG & Sustainability
+  Heart,
+  GraduationCap,
+  Building,
+  Building2,
+  Scale,
+  Briefcase,
+  
+  // Misc
+  Calendar,
+  Clock,
+  MapPin,
+  Globe,
+  Globe2,
+  Eye,
+  EyeOff,
+  HelpCircle,
+  ExternalLink,
+  Copy,
+  BookOpen,
+  List,
+  Grid,
+  Grid3X3,
+  Sliders,
+  DollarSign,
+  Percent,
+  Sparkles,
+  Loader,
+  Loader2,
+  Lightbulb,
+  Package,
+} from 'lucide-react'
 
 export {
   // Navigation
@@ -19,6 +149,9 @@ export {
   Plus,
   Minus,
   Edit,
+  Edit2,
+  Edit3,
+  Trash,
   Trash2,
   Save,
   Download,
@@ -26,19 +159,27 @@ export {
   Search,
   Filter,
   RefreshCw,
+  MoreVertical,
+  MoreHorizontal,
   
   // Status
   Check,
   CheckCircle,
+  CheckCircle2,
   AlertCircle,
   AlertTriangle,
+  AlertOctagon,
   Info,
   XCircle,
+  Circle,
   
-  // Dashboard
+  // Dashboard & Analytics
   LayoutDashboard,
+  BarChart,
+  BarChart2,
   BarChart3,
   PieChart,
+  LineChart,
   TrendingUp,
   TrendingDown,
   Activity,
@@ -46,32 +187,52 @@ export {
   Award,
   Shield,
   
-  // Emission Categories
+  // Emission & Environmental
   Truck,
   Zap,
   Droplet,
+  Droplets,
   Wind,
   Flame,
   Factory,
   Leaf,
-  Trash,
+  TreeDeciduous,
   Snowflake,
+  TreePine,
+  Recycle,
+  Cloud,
+  Thermometer,
   
   // User & Settings
   User,
+  Users,
+  Users2,
+  UserPlus,
   Settings,
   LogOut,
   LogIn,
-  UserPlus,
   Bell,
   Mail,
-  Users,
+  Lock,
+  Unlock,
   
   // Files & Documents
   File,
   FileText,
   FolderOpen,
+  Folder,
   FileSpreadsheet,
+  FileImage,
+  FileDown,
+  FilePlus,
+  
+  // ESG & Sustainability
+  Heart,
+  GraduationCap,
+  Building,
+  Building2,
+  Scale,
+  Briefcase,
   
   // Misc
   Calendar,
@@ -79,12 +240,22 @@ export {
   MapPin,
   Globe,
   Globe2,
-  Building,
-  Building2,
   Eye,
   EyeOff,
   HelpCircle,
   ExternalLink,
   Copy,
   BookOpen,
-} from 'lucide-react'
+  List,
+  Grid,
+  Grid3X3,
+  Sliders,
+  DollarSign,
+  Percent,
+  Sparkles,
+  Loader,
+  Loader2,
+  Lightbulb,
+  Package,
+}
+

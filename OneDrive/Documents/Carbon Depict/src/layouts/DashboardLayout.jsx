@@ -1,5 +1,6 @@
+// Cache bust 2025-10-23
 import { useState } from 'react'
-import { Outlet, Link, useLocation, Navigate } from 'react-router-dom'
+import { Outlet, Link, useLocation, Navigate, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   BarChart3,
@@ -11,9 +12,11 @@ import {
   Bell,
   User,
   Leaf,
+  ChevronDown,
 } from '@atoms/Icon'
 import { IconButton } from '@atoms/Button'
 import clsx from 'clsx'
+import { useAuth } from '../contexts/AuthContext'
 
 /**
  * DashboardLayout - Layout for authenticated dashboard pages
@@ -22,26 +25,27 @@ import clsx from 'clsx'
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const navigate = useNavigate()
+  const { user, logout, isAuthenticated, loading } = useAuth()
+  
   const location = useLocation()
-
-  // TODO: Replace with actual auth check
-  const isAuthenticated = true // Placeholder
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-    { icon: Leaf, label: 'ESG', href: '/dashboard/esg' },
-    { icon: BarChart3, label: 'Emissions', href: '/dashboard/emissions' },
-    { icon: FileText, label: 'Reports', href: '/dashboard/reports' },
-    { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
+    { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', strokeWidth: 2 },
+    { icon: Leaf, label: 'ESG', href: '/dashboard/esg', strokeWidth: 2 },
+    { icon: BarChart3, label: 'Emissions', href: '/dashboard/emissions', strokeWidth: 2 },
+    { icon: FileText, label: 'Reports', href: '/dashboard/reports', strokeWidth: 2 },
+    { icon: Settings, label: 'Settings', href: '/dashboard/settings', strokeWidth: 2 },
   ]
 
-  const handleLogout = () => {
-    // TODO: Implement logout logic
-    console.log('Logout clicked')
+  const handleLogout = async () => {
+    await logout()
+    navigate('/login')
   }
 
   return (
@@ -91,7 +95,7 @@ export default function DashboardLayout() {
                 )}
                 title={!sidebarOpen ? item.label : undefined}
               >
-                <item.icon className="h-5 w-5 flex-shrink-0" />
+                <item.icon className="h-5 w-5 flex-shrink-0" strokeWidth={2} />
                 {sidebarOpen && <span>{item.label}</span>}
               </Link>
             )
@@ -156,7 +160,7 @@ export default function DashboardLayout() {
                         : 'text-cd-muted hover:bg-cd-surface hover:text-cd-midnight'
                     )}
                   >
-                    <item.icon className="h-5 w-5" />
+                    <item.icon className="h-5 w-5" strokeWidth={2} />
                     <span>{item.label}</span>
                   </Link>
                 )
@@ -194,9 +198,52 @@ export default function DashboardLayout() {
             <IconButton ariaLabel="Notifications">
               <Bell className="h-5 w-5" />
             </IconButton>
-            <IconButton ariaLabel="Profile">
-              <User className="h-5 w-5" />
-            </IconButton>
+            
+            {/* User Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cd-teal text-white">
+                  <User className="h-5 w-5" />
+                </div>
+                <div className="hidden md:block text-left">
+                  <p className="text-sm font-medium text-cd-midnight">
+                    {user?.firstName || 'User'}
+                  </p>
+                  <p className="text-xs text-gray-500">{user?.email || ''}</p>
+                </div>
+                <ChevronDown className="h-4 w-4 text-gray-500" />
+              </button>
+
+              {/* Dropdown Menu */}
+              {showUserMenu && (
+                <div className="absolute right-0 mt-2 w-56 rounded-lg bg-white shadow-lg border border-gray-200 z-50">
+                  <div className="p-3 border-b border-gray-200">
+                    <p className="text-sm font-medium text-cd-midnight">{user?.firstName} {user?.lastName}</p>
+                    <p className="text-xs text-gray-500">{user?.email}</p>
+                  </div>
+                  <div className="p-2">
+                    <Link
+                      to="/dashboard/settings"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <Settings className="h-4 w-4" />
+                      Settings
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -208,3 +255,4 @@ export default function DashboardLayout() {
     </div>
   )
 }
+

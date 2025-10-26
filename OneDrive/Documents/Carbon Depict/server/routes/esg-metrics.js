@@ -1,5 +1,10 @@
 const express = require('express')
 const router = express.Router()
+const ESGMetric = require('../models/mongodb/ESGMetric')
+const { authenticate } = require('../middleware/auth')
+
+// Apply auth middleware to all routes
+router.use(authenticate)
 
 /**
  * ESG Metrics Routes
@@ -11,52 +16,19 @@ const router = express.Router()
 // @access  Private
 router.get('/', async (req, res) => {
   try {
-    const { companyId, framework, pillar, reportingPeriod, isMaterial } = req.query
+    const { companyId, framework, pillar, reportingPeriod, isMaterial, status } = req.query
 
-    const filters = {}
-    if (companyId) filters.companyId = companyId
+    const filters = { companyId: companyId || req.user.company }
     if (framework) filters.framework = framework
     if (pillar) filters.pillar = pillar
     if (reportingPeriod) filters.reportingPeriod = reportingPeriod
-    if (isMaterial !== undefined) filters.isMaterial = isMaterial === 'true'
+    if (isMaterial !== undefined) filters['metadata.isMaterial'] = isMaterial === 'true'
+    if (status) filters.status = status
 
-    // TODO: Replace with actual database query
-    const metrics = [
-      {
-        id: '1',
-        companyId: companyId || '123',
-        framework: 'GRI',
-        pillar: 'Environmental',
-        topic: 'GRI 305: Emissions',
-        subTopic: '305-1',
-        metricName: 'Direct (Scope 1) GHG emissions',
-        value: 12450.5,
-        unit: 'tCO2e',
-        reportingPeriod: 'FY2024',
-        startDate: '2024-01-01',
-        endDate: '2024-12-31',
-        dataQuality: 'measured',
-        verified: true,
-        isMaterial: true,
-      },
-      {
-        id: '2',
-        companyId: companyId || '123',
-        framework: 'GRI',
-        pillar: 'Social',
-        topic: 'GRI 405: Diversity',
-        subTopic: '405-1',
-        metricName: 'Percentage of women in workforce',
-        value: 42,
-        unit: '%',
-        reportingPeriod: 'FY2024',
-        startDate: '2024-01-01',
-        endDate: '2024-12-31',
-        dataQuality: 'measured',
-        verified: false,
-        isMaterial: true,
-      },
-    ]
+    const metrics = await ESGMetric.find(filters)
+      .populate('userId', 'name email')
+      .sort({ createdAt: -1 })
+      .lean()
 
     res.json({
       success: true,
@@ -74,7 +46,6 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const {
-      companyId,
       framework,
       pillar,
       topic,
@@ -91,18 +62,17 @@ router.post('/', async (req, res) => {
     } = req.body
 
     // Validation
-    if (!companyId || !framework || !pillar || !metricName || !reportingPeriod) {
+    if (!framework || !pillar || !metricName || !reportingPeriod) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields',
+        error: 'Missing required fields: framework, pillar, metricName, reportingPeriod',
       })
     }
 
-    // TODO: Save to database
-    const newMetric = {
-      id: Date.now().toString(),
-      companyId,
-      userId: req.user?.id || 'user-123',
+    // Create new metric
+    const newMetric = new ESGMetric({
+      companyId: req.user.company,
+      userId: req.user.id,
       framework,
       pillar,
       topic,
@@ -116,10 +86,11 @@ router.post('/', async (req, res) => {
       methodology,
       dataSource,
       dataQuality: dataQuality || 'measured',
-      verified: false,
       status: 'draft',
-      createdAt: new Date(),
-    }
+      isDraft: true,
+    })
+
+    await newMetric.save()
 
     res.status(201).json({
       success: true,
@@ -137,29 +108,24 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params
 
-    // TODO: Fetch from database
-    const metric = {
-      id,
-      companyId: '123',
-      framework: 'GRI',
-      pillar: 'Environmental',
-      topic: 'GRI 305: Emissions',
-      subTopic: '305-1',
-      metricName: 'Direct (Scope 1) GHG emissions',
-      value: 12450.5,
-      unit: 'tCO2e',
-      reportingPeriod: 'FY2024',
-      startDate: '2024-01-01',
-      endDate: '2024-12-31',
-      methodology: 'Calculated using DEFRA 2025 emission factors',
-      dataSource: 'Internal fuel consumption records',
-      dataQuality: 'measured',
-      verified: true,
-      verifiedBy: 'KPMG',
-      verificationDate: '2025-03-01',
-      isMaterial: true,
-      impactMateriality: 'high',
-      financialMateriality: 'medium',
+    const metric = await ESGMetric.findById(id)
+      .populate('userId', 'name email')
+      .populate('companyId', 'name')
+      .lean()
+
+    if (!metric) {
+      return res.status(404).json({
+        success: false,
+        error: 'Metric not found'
+      })
+    }
+
+    // Check if user has access to this metric
+    if (metric.companyId._id.toString() !== req.user.company.toString()) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied'
+      })
     }
 
     res.json({
@@ -177,18 +143,30 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const updates = req.body
 
-    // TODO: Update in database
-    const updatedMetric = {
-      id,
-      ...updates,
-      updatedAt: new Date(),
+    const metric = await ESGMetric.findById(id)
+    if (!metric) {
+      return res.status(404).json({
+        success: false,
+        error: 'Metric not found'
+      })
     }
+
+    // Check access
+    if (metric.companyId.toString() !== req.user.company.toString()) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied'
+      })
+    }
+
+    // Update fields
+    Object.assign(metric, req.body)
+    await metric.save()
 
     res.json({
       success: true,
-      data: updatedMetric,
+      data: metric,
     })
   } catch (error) {
     res.status(500).json({ success: false, error: error.message })
@@ -202,13 +180,41 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params
 
-    // TODO: Delete from database
+    const metric = await ESGMetric.findById(id)
+    if (!metric) {
+      return res.status(404).json({
+        success: false,
+        error: 'Metric not found'
+      })
+    }
+
+    // Get companyId from auth middleware
+    const companyId = req.companyId || req.user?.companyId
+    
+    // Check access - ensure user can only delete their company's metrics
+    const metricCompanyId = metric.companyId?.toString() || metric.companyId
+    const userCompanyId = companyId || req.user?.company?._id?.toString()
+
+    if (metricCompanyId !== userCompanyId) {
+      console.error('Delete metric access denied:', {
+        metricCompanyId,
+        userCompanyId,
+        reqCompanyId: companyId
+      })
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied'
+      })
+    }
+
+    await ESGMetric.deleteOne({ _id: id })
 
     res.json({
       success: true,
       message: 'Metric deleted successfully',
     })
   } catch (error) {
+    console.error('Error deleting metric:', error)
     res.status(500).json({ success: false, error: error.message })
   }
 })
@@ -301,40 +307,87 @@ router.post('/bulk', async (req, res) => {
 // @access  Private
 router.get('/summary', async (req, res) => {
   try {
-    const { companyId, reportingPeriod } = req.query
+    const { reportingPeriod } = req.query
+    const companyId = req.user.company
 
-    // TODO: Calculate from database
+    const GHGEmission = require('../models/mongodb/GHGEmission')
+    
+    // Build query filter
+    const filter = { companyId }
+    if (reportingPeriod) filter.reportingPeriod = reportingPeriod
+
+    // Get emissions data
+    const emissions = await GHGEmission.find(filter).lean()
+    
+    // Calculate totals by scope
+    const scope1Total = emissions
+      .filter(e => e.scope === 'scope1')
+      .reduce((sum, e) => sum + (e.co2e || 0), 0)
+    
+    const scope2Total = emissions
+      .filter(e => e.scope === 'scope2')
+      .reduce((sum, e) => sum + (e.co2e || 0), 0)
+    
+    const scope3Total = emissions
+      .filter(e => e.scope === 'scope3')
+      .reduce((sum, e) => sum + (e.co2e || 0), 0)
+    
+    const totalEmissions = scope1Total + scope2Total + scope3Total
+
+    // Get ESG metrics by pillar
+    const esgMetrics = await ESGMetric.find({ 
+      ...filter,
+      status: 'published' 
+    }).lean()
+    
+    const environmentalMetrics = esgMetrics.filter(m => m.pillar === 'Environmental')
+    const socialMetrics = esgMetrics.filter(m => m.pillar === 'Social')
+    const governanceMetrics = esgMetrics.filter(m => m.pillar === 'Governance')
+
+    // Calculate compliance scores (simplified)
+    const calculateScore = (metrics) => {
+      if (metrics.length === 0) return 0
+      const avgCompliance = metrics.reduce((sum, m) => 
+        sum + (m.complianceScore || 0), 0) / metrics.length
+      return Math.round(avgCompliance)
+    }
+
     const summary = {
       overall: {
-        score: 72,
-        trend: '+5',
+        score: calculateScore(esgMetrics),
+        trend: '+5', // TODO: Calculate from historical data
+        metricsCount: esgMetrics.length,
       },
       environmental: {
-        score: 78,
+        score: calculateScore(environmentalMetrics),
+        metricsCount: environmentalMetrics.length,
         keyMetrics: {
-          ghgEmissions: { value: 12450, unit: 'tCO2e', change: '-12%' },
-          energyConsumption: { value: 45680, unit: 'MWh', change: '-8%' },
-          waterUse: { value: 18900, unit: 'm³', change: '+3%' },
-          wasteRecycled: { value: 68, unit: '%', change: '+15%' },
+          ghgEmissions: { 
+            value: Math.round(totalEmissions / 1000), // Convert to tonnes
+            unit: 'tCO2e', 
+            change: '-12%', // TODO: Calculate from historical
+            breakdown: {
+              scope1: Math.round(scope1Total / 1000),
+              scope2: Math.round(scope2Total / 1000),
+              scope3: Math.round(scope3Total / 1000),
+            }
+          },
+          energyConsumption: { 
+            value: scope2Total > 0 ? Math.round(scope2Total / 0.21) : 0, // Estimate from electricity
+            unit: 'MWh', 
+            change: '-8%' 
+          },
         },
       },
       social: {
-        score: 68,
-        keyMetrics: {
-          employeeTurnover: { value: 12.5, unit: '%', change: '-2%' },
-          womenInLeadership: { value: 42, unit: '%', change: '+5%' },
-          trainingHours: { value: 35, unit: 'hrs/employee', change: '+18%' },
-          safetyIncidents: { value: 0.8, unit: 'per 100 FTE', change: '-25%' },
-        },
+        score: calculateScore(socialMetrics),
+        metricsCount: socialMetrics.length,
+        keyMetrics: {},
       },
       governance: {
-        score: 70,
-        keyMetrics: {
-          boardIndependence: { value: 65, unit: '%', change: '+5%' },
-          ethicsViolations: { value: 2, unit: 'cases', change: '0%' },
-          supplierAudits: { value: 85, unit: '%', change: '+10%' },
-          dataBreaches: { value: 0, unit: 'incidents', change: '0%' },
-        },
+        score: calculateScore(governanceMetrics),
+        metricsCount: governanceMetrics.length,
+        keyMetrics: {},
       },
     }
 

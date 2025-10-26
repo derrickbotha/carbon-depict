@@ -1,0 +1,12 @@
+{
+  "name": "Carbon Depict - ESG & Carbon Management Platform",
+  "short_name": "CarbonDepict",
+  "description": "Complete ESG management platform with AI-powered compliance checking and carbon emissions tracking",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1e3a2f",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": []
+}

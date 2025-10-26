@@ -1,3 +1,4 @@
+// Cache bust 2025-10-23
 export default function PricingPage() {
   const plans = [
     {
@@ -146,3 +147,4 @@ export default function PricingPage() {
     </div>
   )
 }
+

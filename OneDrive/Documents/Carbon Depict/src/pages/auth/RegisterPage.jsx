@@ -1,12 +1,15 @@
+// Cache bust 2025-10-23
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Input, Select } from '@atoms/Input'
 import { LoadingButton } from '@atoms/Button'
-import { Eye, EyeOff } from '@atoms/Icon'
+import { Eye, EyeOff, AlertCircle } from '@atoms/Icon'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
   const [formData, setFormData] = useState({
     companyName: '',
     email: '',
@@ -15,6 +18,7 @@ export default function RegisterPage() {
     industry: '',
   })
   const navigate = useNavigate()
+  const { register } = useAuth()
 
   const industries = [
     { value: 'agriculture', label: 'Agriculture' },
@@ -28,19 +32,33 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setError(null)
     
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match')
+      setError('Passwords do not match')
+      return
+    }
+
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long')
       return
     }
 
     setLoading(true)
 
-    // TODO: Implement actual registration logic
-    setTimeout(() => {
+    const result = await register({
+      companyName: formData.companyName,
+      email: formData.email,
+      password: formData.password,
+      industry: formData.industry,
+    })
+
+    if (result.success) {
+      navigate('/dashboard', { replace: true })
+    } else {
+      setError(result.error)
       setLoading(false)
-      navigate('/dashboard')
-    }, 1500)
+    }
   }
 
   const handleChange = (e) => {
@@ -66,6 +84,16 @@ export default function RegisterPage() {
 
         {/* Registration Form */}
         <div className="rounded-lg bg-white p-8 shadow-cd-md">
+          {error && (
+            <div className="mb-4 rounded-lg bg-red-50 p-4 flex items-start gap-3">
+              <Alert strokeWidth={2} />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-800">Registration Failed</p>
+                <p className="text-sm text-red-700 mt-1">{error}</p>
+              </div>
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input
               label="Company Name"
@@ -171,3 +199,4 @@ export default function RegisterPage() {
     </div>
   )
 }
+

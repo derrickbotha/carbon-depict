@@ -1,3 +1,4 @@
+// Cache bust 2025-10-23
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Menu, X } from '@atoms/Icon'
@@ -133,3 +134,4 @@ export default function Navbar() {
     </nav>
   )
 }
+

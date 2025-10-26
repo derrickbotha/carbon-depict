@@ -1,3 +1,4 @@
+// Cache bust 2025-10-23
 import { Outlet } from 'react-router-dom'
 import Navbar from '@organisms/Navbar'
 import Footer from '@organisms/Footer'
@@ -17,3 +18,4 @@ export default function MarketingLayout() {
     </div>
   )
 }
+

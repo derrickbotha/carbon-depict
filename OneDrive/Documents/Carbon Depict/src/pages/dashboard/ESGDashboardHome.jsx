@@ -1,3 +1,4 @@
+// Cache bust 2025-10-23
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -12,7 +13,8 @@ import {
   ChevronRight,
   BarChart3,
   Globe,
-} from 'lucide-react'
+  User,
+} from '@atoms/Icon'
 import esgDataManager from '../../utils/esgDataManager'
 
 /**

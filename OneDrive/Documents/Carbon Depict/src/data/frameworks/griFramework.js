@@ -8,7 +8,7 @@ export const GRI_FRAMEWORK = {
     name: 'GRI Standards 2021',
     version: '2021',
     organization: 'Global Reporting Initiative',
-    description: 'The world's most widely used standards for sustainability reporting',
+    description: 'The world\'s most widely used standards for sustainability reporting',
     url: 'https://www.globalreporting.org/standards',
   },
 

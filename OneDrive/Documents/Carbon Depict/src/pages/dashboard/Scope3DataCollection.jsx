@@ -1,104 +1,111 @@
-import { useState, useMemo } from 'react'
+// Cache bust 2025-10-23
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Globe, CheckCircle2, Circle, AlertCircle, Info } from 'lucide-react'
+import { ArrowLeft, Globe, CheckCircle2, Circle, AlertCircle, Info } from '@atoms/Icon'
+import { enterpriseAPI } from '../../services/enterpriseAPI'
+import DataEntryManager from '../../components/molecules/DataEntryManager'
 
 export default function Scope3DataCollection() {
-  const [currentCategory, setCurrentCategory] = useState('purchasedGoods')
+  const [currentCategory, setCurrentCategory] = useState('purchasedGoodsServices')
+  const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [saveMessage, setSaveMessage] = useState('')
   const [formData, setFormData] = useState({
     // Category 1: Purchased Goods & Services (5 fields)
-    purchasedGoods: {
+    purchasedGoodsServices: {
       'raw-materials-spend': { name: 'Raw Materials (£)', value: '', unit: '£', completed: false },
       'packaging-materials': { name: 'Packaging Materials (£)', value: '', unit: '£', completed: false },
       'professional-services': { name: 'Professional Services (£)', value: '', unit: '£', completed: false },
       'it-equipment': { name: 'IT Equipment (£)', value: '', unit: '£', completed: false },
       'office-supplies': { name: 'Office Supplies (£)', value: '', unit: '£', completed: false },
     },
-    // Category 2: Capital Goods (3 fields)
-    capitalGoods: {
-      'buildings-infrastructure': { name: 'Buildings & Infrastructure (£)', value: '', unit: '£', completed: false },
-      'machinery-equipment': { name: 'Machinery & Equipment (£)', value: '', unit: '£', completed: false },
-      'vehicles-purchased': { name: 'Vehicles Purchased (£)', value: '', unit: '£', completed: false },
-    },
-    // Category 3: Fuel & Energy Related (3 fields)
-    fuelEnergy: {
-      'upstream-fuel': { name: 'Upstream Fuel Extraction (kWh)', value: '', unit: 'kWh', completed: false },
-      'upstream-electricity': { name: 'Upstream Electricity (kWh)', value: '', unit: 'kWh', completed: false },
-      'transmission-losses': { name: 'T&D Losses (kWh)', value: '', unit: 'kWh', completed: false },
-    },
-    // Category 4: Upstream Transportation (4 fields)
-    upstreamTransport: {
+    // Category 2: Transportation & Distribution (4 fields)
+    transportationDistribution: {
       'supplier-deliveries-km': { name: 'Supplier Deliveries (tonne-km)', value: '', unit: 'tonne-km', completed: false },
       'inbound-freight': { name: 'Inbound Freight (£)', value: '', unit: '£', completed: false },
       'courier-services': { name: 'Courier Services (£)', value: '', unit: '£', completed: false },
       'shipping-containers': { name: 'Shipping Containers (number)', value: '', unit: 'containers', completed: false },
     },
-    // Category 5: Waste Generated (4 fields)
-    waste: {
+    // Category 3: Waste Disposal (4 fields)
+    wasteDisposal: {
       'general-waste': { name: 'General Waste (tonnes)', value: '', unit: 'tonnes', completed: false },
-      'recycling': { name: 'Recycling (tonnes)', value: '', unit: 'tonnes', completed: false },
+      'recyclable-waste': { name: 'Recyclable Waste (tonnes)', value: '', unit: 'tonnes', completed: false },
       'hazardous-waste': { name: 'Hazardous Waste (tonnes)', value: '', unit: 'tonnes', completed: false },
-      'wastewater': { name: 'Wastewater (m³)', value: '', unit: 'm³', completed: false },
+      'food-waste': { name: 'Food Waste (tonnes)', value: '', unit: 'tonnes', completed: false },
     },
-    // Category 6: Business Travel (5 fields)
+    // Category 6: Business Travel - IMPROVED WITH AIR TRAVEL CLASSES
     businessTravel: {
-      'air-domestic': { name: 'Air Travel - Domestic (km)', value: '', unit: 'km', completed: false },
-      'air-short-haul': { name: 'Air Travel - Short Haul (<3700km)', value: '', unit: 'km', completed: false },
-      'air-long-haul': { name: 'Air Travel - Long Haul (>3700km)', value: '', unit: 'km', completed: false },
+      // Domestic air travel
+      'air-domestic-economy': { name: 'Air Travel - Domestic Economy (km)', value: '', unit: 'km', completed: false },
+      'air-domestic-business': { name: 'Air Travel - Domestic Business (km)', value: '', unit: 'km', completed: false },
+      // Short haul (<3700km)
+      'air-short-haul-economy': { name: 'Air Travel - Short Haul Economy (km)', value: '', unit: 'km', completed: false },
+      'air-short-haul-business': { name: 'Air Travel - Short Haul Business (km)', value: '', unit: 'km', completed: false },
+      // Long haul (>3700km)
+      'air-long-haul-economy': { name: 'Air Travel - Long Haul Economy (km)', value: '', unit: 'km', completed: false },
+      'air-long-haul-premium': { name: 'Air Travel - Long Haul Premium (km)', value: '', unit: 'km', completed: false },
+      'air-long-haul-business': { name: 'Air Travel - Long Haul Business (km)', value: '', unit: 'km', completed: false },
+      'air-long-haul-first': { name: 'Air Travel - Long Haul First (km)', value: '', unit: 'km', completed: false },
+      // Other travel
       'rail-travel': { name: 'Rail Travel (km)', value: '', unit: 'km', completed: false },
       'hotel-nights': { name: 'Hotel Nights (number)', value: '', unit: 'nights', completed: false },
     },
     // Category 7: Employee Commuting (4 fields)
-    commuting: {
-      'car-commute': { name: 'Car Commute (km)', value: '', unit: 'km', completed: false },
-      'public-transport': { name: 'Public Transport (km)', value: '', unit: 'km', completed: false },
-      'bike-walk': { name: 'Bike/Walk (km)', value: '', unit: 'km', completed: false },
-      'remote-working-days': { name: 'Remote Working (days)', value: '', unit: 'days', completed: false },
+    employeeCommuting: {
+      'employee-car': { name: 'Employee Car Commute (km)', value: '', unit: 'km', completed: false },
+      'employee-train': { name: 'Employee Train Commute (km)', value: '', unit: 'km', completed: false },
+      'employee-bus': { name: 'Employee Bus Commute (km)', value: '', unit: 'km', completed: false },
+      'employee-cycle': { name: 'Employee Cycle/Walk (km)', value: '', unit: 'km', completed: false },
     },
-    // Category 8: Upstream Leased Assets (2 fields)
-    upstreamLeased: {
-      'leased-vehicles': { name: 'Leased Vehicles (number)', value: '', unit: 'vehicles', completed: false },
-      'leased-buildings': { name: 'Leased Buildings (m²)', value: '', unit: 'm²', completed: false },
-    },
-    // Category 9: Downstream Transportation (3 fields)
-    downstreamTransport: {
-      'product-distribution': { name: 'Product Distribution (tonne-km)', value: '', unit: 'tonne-km', completed: false },
-      'customer-deliveries': { name: 'Customer Deliveries (£)', value: '', unit: '£', completed: false },
-      'return-logistics': { name: 'Return Logistics (£)', value: '', unit: '£', completed: false },
-    },
-    // Category 10: Processing of Sold Products (2 fields)
-    processing: {
-      'intermediate-products': { name: 'Intermediate Products Sold (tonnes)', value: '', unit: 'tonnes', completed: false },
-      'processing-energy': { name: 'Expected Processing Energy (kWh)', value: '', unit: 'kWh', completed: false },
-    },
-    // Category 11: Use of Sold Products (3 fields)
-    useOfProducts: {
-      'product-units-sold': { name: 'Product Units Sold (number)', value: '', unit: 'units', completed: false },
-      'avg-product-lifespan': { name: 'Avg Product Lifespan (years)', value: '', unit: 'years', completed: false },
-      'annual-energy-use': { name: 'Annual Energy Use per Product (kWh)', value: '', unit: 'kWh', completed: false },
-    },
-    // Category 12: End-of-Life Treatment (3 fields)
-    endOfLife: {
-      'products-landfill': { name: 'Products to Landfill (tonnes)', value: '', unit: 'tonnes', completed: false },
-      'products-recycled': { name: 'Products Recycled (tonnes)', value: '', unit: 'tonnes', completed: false },
-      'products-incinerated': { name: 'Products Incinerated (tonnes)', value: '', unit: 'tonnes', completed: false },
-    },
-    // Category 13: Downstream Leased Assets (2 fields)
-    downstreamLeased: {
-      'properties-leased-out': { name: 'Properties Leased to Others (m²)', value: '', unit: 'm²', completed: false },
-      'equipment-leased-out': { name: 'Equipment Leased to Others (number)', value: '', unit: 'items', completed: false },
-    },
-    // Category 14: Franchises (2 fields)
-    franchises: {
-      'franchise-locations': { name: 'Franchise Locations (number)', value: '', unit: 'locations', completed: false },
-      'franchise-revenue': { name: 'Total Franchise Revenue (£)', value: '', unit: '£', completed: false },
-    },
-    // Category 15: Investments (3 fields)
+    // Category 8: Investments (3 fields)
     investments: {
       'equity-investments': { name: 'Equity Investments (£)', value: '', unit: '£', completed: false },
-      'debt-investments': { name: 'Debt Investments (£)', value: '', unit: '£', completed: false },
-      'project-finance': { name: 'Project Finance (£)', value: '', unit: '£', completed: false },
+      'bond-investments': { name: 'Bond Investments (£)', value: '', unit: '£', completed: false },
+      'property-investments': { name: 'Property Investments (£)', value: '', unit: '£', completed: false },
     },
   })
+
+  // Load saved data on component mount
+  useEffect(() => {
+    const loadSavedData = async () => {
+      try {
+        setIsLoading(true)
+        const response = await enterpriseAPI.emissions.getByCategory('scope3', new Date().getFullYear().toString())
+        
+        if (response.data.success && response.data.data) {
+          const savedData = response.data.data
+          
+          // Merge saved data with form structure
+          setFormData(prev => {
+            const mergedData = { ...prev }
+            
+            Object.keys(savedData).forEach(category => {
+              if (mergedData[category]) {
+                Object.keys(savedData[category]).forEach(fieldKey => {
+                  if (mergedData[category][fieldKey]) {
+                    mergedData[category][fieldKey] = {
+                      ...mergedData[category][fieldKey],
+                      value: savedData[category][fieldKey].value,
+                      completed: savedData[category][fieldKey].completed
+                    }
+                  }
+                })
+              }
+            })
+            
+            return mergedData
+          })
+        }
+      } catch (error) {
+        console.error('Error loading saved data:', error)
+        // Don't show error to user, just continue with empty form
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadSavedData()
+  }, [])
 
   const handleInputChange = (category, fieldKey, value) => {
     setFormData((prev) => ({
@@ -112,6 +119,70 @@ export default function Scope3DataCollection() {
         },
       },
     }))
+  }
+
+  const handleCalculateEmissions = async () => {
+    setIsSaving(true)
+    setSaveMessage('')
+    
+    try {
+      const response = await enterpriseAPI.emissions.calculateAndSave(
+        formData,
+        'scope3',
+        new Date().getFullYear().toString()
+      )
+      
+      if (response.data.success) {
+        const { totalEmissions, calculations, errors } = response.data.data
+        
+        if (errors.length > 0) {
+          setSaveMessage(`⚠️ Calculated ${calculations.length} emissions (${errors.length} errors). Total: ${totalEmissions} kg CO2e`)
+        } else {
+          setSaveMessage(`✅ Successfully calculated ${calculations.length} emissions! Total: ${totalEmissions} kg CO2e`)
+        }
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => {
+          setSaveMessage('')
+        }, 5000)
+      } else {
+        setSaveMessage('❌ Failed to calculate emissions. Please try again.')
+      }
+    } catch (error) {
+      console.error('Calculation error:', error)
+      setSaveMessage(`❌ Error calculating emissions: ${error.response?.data?.error || error.message}`)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSaveProgress = async () => {
+    setIsSaving(true)
+    setSaveMessage('')
+    
+    try {
+      const response = await enterpriseAPI.emissions.bulkSave(
+        formData,
+        'scope3',
+        new Date().getFullYear().toString()
+      )
+      
+      if (response.data.success) {
+        setSaveMessage(`✅ Successfully saved ${response.data.count} emission records!`)
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setSaveMessage('')
+        }, 3000)
+      } else {
+        setSaveMessage('❌ Failed to save data. Please try again.')
+      }
+    } catch (error) {
+      console.error('Save error:', error)
+      setSaveMessage(`❌ Error saving data: ${error.response?.data?.error || error.message}`)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const calculateCategoryProgress = (category) => {
@@ -139,21 +210,12 @@ export default function Scope3DataCollection() {
   }
 
   const categories = [
-    { id: 'purchasedGoods', name: 'Cat 1: Purchased Goods', description: 'Upstream emissions from purchased goods and services', icon: '📦', fields: 5 },
-    { id: 'capitalGoods', name: 'Cat 2: Capital Goods', description: 'Long-term assets purchased', icon: '🏗️', fields: 3 },
-    { id: 'fuelEnergy', name: 'Cat 3: Fuel & Energy', description: 'Upstream fuel and energy activities', icon: '⛽', fields: 3 },
-    { id: 'upstreamTransport', name: 'Cat 4: Upstream Transport', description: 'Inbound logistics and transportation', icon: '🚚', fields: 4 },
-    { id: 'waste', name: 'Cat 5: Waste', description: 'Waste generated in operations', icon: '🗑️', fields: 4 },
-    { id: 'businessTravel', name: 'Cat 6: Business Travel', description: 'Employee travel for business', icon: '✈️', fields: 5 },
-    { id: 'commuting', name: 'Cat 7: Commuting', description: 'Employee commuting to work', icon: '🚗', fields: 4 },
-    { id: 'upstreamLeased', name: 'Cat 8: Upstream Leased', description: 'Assets leased by your company', icon: '🏢', fields: 2 },
-    { id: 'downstreamTransport', name: 'Cat 9: Downstream Transport', description: 'Outbound logistics and distribution', icon: '📬', fields: 3 },
-    { id: 'processing', name: 'Cat 10: Processing', description: 'Processing of intermediate products sold', icon: '⚙️', fields: 2 },
-    { id: 'useOfProducts', name: 'Cat 11: Use of Products', description: 'Emissions from customer use of products', icon: '🔌', fields: 3 },
-    { id: 'endOfLife', name: 'Cat 12: End-of-Life', description: 'Disposal of products at end of life', icon: '♻️', fields: 3 },
-    { id: 'downstreamLeased', name: 'Cat 13: Downstream Leased', description: 'Assets leased to others', icon: '🏘️', fields: 2 },
-    { id: 'franchises', name: 'Cat 14: Franchises', description: 'Franchise operations', icon: '🏪', fields: 2 },
-    { id: 'investments', name: 'Cat 15: Investments', description: 'Investment portfolio emissions', icon: '💼', fields: 3 },
+    { id: 'purchasedGoodsServices', name: 'Cat 1: Purchased Goods & Services', description: 'Upstream emissions from purchased goods and services', icon: '📦', fields: 5 },
+    { id: 'transportationDistribution', name: 'Cat 2: Transportation & Distribution', description: 'Inbound and outbound logistics', icon: '🚚', fields: 4 },
+    { id: 'wasteDisposal', name: 'Cat 3: Waste Disposal', description: 'Waste generated in operations', icon: '🗑️', fields: 4 },
+    { id: 'businessTravel', name: 'Cat 4: Business Travel', description: 'Employee travel for business', icon: '✈️', fields: 5 },
+    { id: 'employeeCommuting', name: 'Cat 5: Employee Commuting', description: 'Employee commuting to work', icon: '🚗', fields: 4 },
+    { id: 'investments', name: 'Cat 6: Investments', description: 'Investment portfolio emissions', icon: '💼', fields: 3 },
   ]
 
   const currentCategoryData = categories.find((cat) => cat.id === currentCategory)
@@ -182,7 +244,30 @@ export default function Scope3DataCollection() {
         </div>
       </div>
 
-      {/* Overall Progress */}
+      {/* Data Entry Manager */}
+      <DataEntryManager
+        formType="emissions"
+        scope="scope3"
+        formData={formData}
+        setFormData={setFormData}
+        onSave={handleCalculateEmissions}
+        isLoading={isSaving}
+      />
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cd-cedar mx-auto mb-4"></div>
+            <p className="text-cd-muted">Loading saved data...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content - Only show when not loading */}
+      {!isLoading && (
+        <>
+          {/* Overall Progress */}
       <div className="rounded-lg border border-cd-cedar/20 bg-white p-6 shadow-cd-sm">
         <div className="mb-3 flex items-center justify-between">
           <div>
@@ -359,22 +444,37 @@ export default function Scope3DataCollection() {
           </div>
         </div>
 
+        {/* Save Message */}
+        {saveMessage && (
+          <div className={`mt-4 p-3 rounded-lg text-sm font-medium ${
+            saveMessage.includes('✅') 
+              ? 'bg-green-50 text-green-700 border border-green-200' 
+              : 'bg-red-50 text-red-700 border border-red-200'
+          }`}>
+            {saveMessage}
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="mt-6 flex gap-4 border-t border-cd-border pt-6">
           <button
-            className="flex-1 rounded-lg bg-cd-cedar px-6 py-3 font-semibold text-white transition-colors hover:bg-cd-cedar/90"
-            onClick={() => alert('Data saved! (API integration pending)')}
+            className="flex-1 rounded-lg bg-cd-cedar px-6 py-3 font-semibold text-white transition-colors hover:bg-cd-cedar/90 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            onClick={handleSaveProgress}
+            disabled={isSaving}
           >
-            Save Progress
+            {isSaving ? 'Saving...' : 'Save Progress'}
           </button>
-          <button
-            className="flex-1 rounded-lg border border-cd-border bg-white px-6 py-3 font-semibold text-cd-cedar transition-colors hover:bg-cd-surface"
-            onClick={() => alert('Calculate emissions (API integration pending)')}
-          >
-            Calculate Emissions
-          </button>
-        </div>
-      </div>
+              <button
+                className="flex-1 rounded-lg border border-cd-border bg-white px-6 py-3 font-semibold text-cd-cedar transition-colors hover:bg-cd-surface disabled:bg-gray-100 disabled:cursor-not-allowed"
+                onClick={handleCalculateEmissions}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Calculating...' : 'Calculate Emissions'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
