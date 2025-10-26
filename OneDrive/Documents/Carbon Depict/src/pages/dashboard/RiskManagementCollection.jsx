@@ -6,6 +6,20 @@ import {
 } from '@atoms/Icon'
 import useESGMetrics from '../../hooks/useESGMetrics'
 
+// Icon mapping to resolve string names to actual icon components
+const iconMap = {
+  'Shield': Shield,
+  'Cloud': Cloud,
+  'Target': Target,
+  'Activity': Activity,
+  'TrendingDown': TrendingDown,
+  'Lock': Lock,
+  'Thermometer': Thermometer,
+  'CheckCircle2': CheckCircle2,
+  'BarChart3': BarChart3,
+  'AlertTriangle': AlertTriangle
+}
+
 // Field categories for organization - defined outside component to avoid initialization order issues
 const riskCategories = [
   {
@@ -470,6 +484,8 @@ export default function RiskManagementCollection() {
       const filled = fields.filter(f => formData[f.key] !== '').length
       return {
         ...cat,
+        // Resolve icon string to actual icon component
+        icon: typeof cat.icon === 'string' ? iconMap[cat.icon] : cat.icon,
         progress: Math.round((filled / fields.length) * 100),
         filled,
         total: fields.length
@@ -521,10 +537,12 @@ export default function RiskManagementCollection() {
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Risk Category Progress</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {categoryProgress.map(cat => (
+            {categoryProgress.map(cat => {
+              const CatIcon = typeof cat.icon === 'string' ? iconMap[cat.icon] : cat.icon
+              return (
               <div key={cat.id} className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${cat.bgColor}`}>
-                  <cat.icon className={`h-6 w-6 ${cat.color}`} strokeWidth={2} />
+                  <CatIcon className={`h-6 w-6 ${cat.color}`} strokeWidth={2} />
                 </div>
                 <div className="flex-1">
                   <div className="text-sm font-medium text-gray-900">{cat.name}</div>
@@ -539,17 +557,21 @@ export default function RiskManagementCollection() {
                   </div>
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
         {/* Data Collection Forms */}
         <div className="space-y-6">
-          {riskCategories.map(category => (
+          {riskCategories.map(category => {
+            // Resolve icon string to actual icon component
+            const Icon = typeof category.icon === 'string' ? iconMap[category.icon] : category.icon
+            return (
             <div key={category.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
               <div className={`${category.bgColor} px-6 py-4 border-l-4 border-indigo-500`}>
                 <div className="flex items-center gap-3">
-                  <category.icon className={`h-6 w-6 ${category.color}`} strokeWidth={2} />
+                  <Icon className={`h-6 w-6 ${category.color}`} strokeWidth={2} />
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
                     <p className="text-sm text-gray-600">{category.description}</p>
@@ -614,7 +636,8 @@ export default function RiskManagementCollection() {
                 </div>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
 
         {/* Automated Analytics */}
