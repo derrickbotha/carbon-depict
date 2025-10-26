@@ -178,12 +178,25 @@ export default function RiskManagementCollection() {
     return { total: exposure, level }
   }, [formData])
 
-  // Progress calculation
+  // Progress calculation - count all individual fields across all categories
   const progress = useMemo(() => {
-    const totalFields = Object.keys(formData).length
-    const filledFields = Object.values(formData).filter(v => v !== '').length
-    return Math.round((filledFields / totalFields) * 100)
-  }, [formData])
+    let totalFields = 0
+    let filledFields = 0
+    
+    // Count all fields in all categories
+    categories.forEach(category => {
+      category.fields.forEach(field => {
+        totalFields++
+        const value = formData[field.key]
+        // Consider a field filled if it has any value
+        if (value !== undefined && value !== null && value !== '') {
+          filledFields++
+        }
+      })
+    })
+    
+    return totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0
+  }, [formData, categories])
 
   // Load existing data on mount
   useEffect(() => {
@@ -210,6 +223,8 @@ export default function RiskManagementCollection() {
         value: progress,
         unit: '% complete',
         dataQuality: 'self-declared',
+        status: 'draft', // Save as draft
+        isDraft: true, // Mark as draft
         metadata: {
           formData: formData,
           completionPercentage: progress,
@@ -221,7 +236,9 @@ export default function RiskManagementCollection() {
         await updateMetric(existingMetricId, metricData)
       } else {
         const newMetric = await createMetric(metricData)
-        setExistingMetricId(newMetric._id)
+        if (newMetric && newMetric._id) {
+          setExistingMetricId(newMetric._id)
+        }
       }
       
       setSaveStatus('saved')
@@ -229,6 +246,7 @@ export default function RiskManagementCollection() {
     } catch (error) {
       console.error('Error saving Risk Management data:', error)
       setSaveStatus('error')
+      alert('Failed to save progress. Please try again.')
       setTimeout(() => setSaveStatus(''), 3000)
     }
   }, [formData, progress, existingMetricId, createMetric, updateMetric])
@@ -810,7 +828,7 @@ export default function RiskManagementCollection() {
         <div className="flex gap-4 mt-8">
           <button
             onClick={handleSave}
-            disabled={loading || saveStatus === 'saving'}
+            disabled={loading || saveStatus === 'saving' || saveStatus === 'submitting'}
             className="flex-1 flex items-center justify-center gap-2 bg-white border-2 border-indigo-600 text-indigo-600 px-6 py-3 rounded-lg hover:bg-indigo-50 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Save className="h-5 w-5" strokeWidth={2} />
@@ -818,11 +836,11 @@ export default function RiskManagementCollection() {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={progress < 100 || loading || saveStatus === 'submitting'}
-            className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-              progress === 100 && !loading
+            disabled={progress < 100 || loading || saveStatus === 'submitting' || saveStatus === 'saving'}
+            className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+              progress === 100 && !loading && saveStatus !== 'submitting' && saveStatus !== 'saving'
                 ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-gray-300 text-gray-500'
             }`}
           >
             <CheckCircle2 className="h-5 w-5" strokeWidth={2} />
