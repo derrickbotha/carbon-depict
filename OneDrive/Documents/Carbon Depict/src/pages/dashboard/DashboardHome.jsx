@@ -43,10 +43,22 @@ export default function DashboardHome() {
   const validApiParams = (apiParams.startDate && apiParams.endDate) ? apiParams : {}
 
   // Load live data from API with date filtering
-  const { data: dashboardData, loading: dashboardLoading, error: dashboardError } = useDashboardData(validApiParams)
-  const { data: emissionsData, loading: emissionsLoading } = useEmissionsAnalytics(validApiParams)
-  const { data: esgData, loading: esgLoading } = useESGAnalytics(validApiParams)
-  const { data: complianceData, loading: complianceLoading } = useComplianceAnalytics(validApiParams)
+  const { data: dashboardData, loading: dashboardLoading, error: dashboardError, refetch: refetchDashboard } = useDashboardData(validApiParams)
+  const { data: emissionsData, loading: emissionsLoading, refetch: refetchEmissions } = useEmissionsAnalytics(validApiParams)
+  const { data: esgData, loading: esgLoading, refetch: refetchESG } = useESGAnalytics(validApiParams)
+  const { data: complianceData, loading: complianceLoading, refetch: refetchCompliance } = useComplianceAnalytics(validApiParams)
+  
+  // Real-time updates every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetchDashboard()
+      refetchEmissions()
+      refetchESG()
+      refetchCompliance()
+    }, 30000) // Every 30 seconds
+    
+    return () => clearInterval(interval)
+  }, [refetchDashboard, refetchEmissions, refetchESG, refetchCompliance])
 
   // Calculate scores from real data
   const scores = {
