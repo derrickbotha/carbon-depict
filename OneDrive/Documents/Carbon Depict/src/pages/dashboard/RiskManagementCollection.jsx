@@ -6,6 +6,173 @@ import {
 } from '@atoms/Icon'
 import useESGMetrics from '../../hooks/useESGMetrics'
 
+// Field categories for organization - defined outside component to avoid initialization order issues
+const riskCategories = [
+  {
+    id: 'framework',
+    name: 'Enterprise Risk Management Framework',
+    icon: 'Shield',
+    description: 'Overall risk management structure and governance',
+    color: 'text-indigo-600',
+    bgColor: 'bg-indigo-50',
+    fields: [
+      { key: 'ermFrameworkExists', label: 'ERM Framework Established', type: 'select', options: ['Yes', 'No', 'In Development'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
+      { key: 'ermFrameworkStandard', label: 'Framework Standard', type: 'select', options: ['COSO ERM', 'ISO 31000', 'Custom', 'Other'], framework: 'GRI 2-12', required: false },
+      { key: 'ermLastReview', label: 'Framework Last Reviewed', type: 'date', framework: 'GRI 2-12', required: false },
+      { key: 'boardOversightFrequency', label: 'Board Risk Oversight Frequency', type: 'select', options: ['Monthly', 'Quarterly', 'Semi-annually', 'Annually'], framework: 'GRI 2-13, TCFD Governance', required: true },
+      { key: 'riskCommitteeExists', label: 'Dedicated Risk Committee', type: 'select', options: ['Yes', 'No'], framework: 'GRI 2-13, CSRD GOV-1', required: true },
+      { key: 'chiefRiskOfficer', label: 'Chief Risk Officer Appointed', type: 'select', options: ['Yes', 'No'], framework: 'GRI 2-13', required: false },
+    ]
+  },
+  {
+    id: 'climate',
+    name: 'Climate-Related Risks (TCFD)',
+    icon: 'Cloud',
+    description: 'Physical and transition climate risks',
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50',
+    fields: [
+      { key: 'climateRiskAssessmentConducted', label: 'Climate Risk Assessment Conducted', type: 'select', options: ['Yes', 'No', 'In Progress'], framework: 'TCFD, GRI 201-2, CSRD E1', required: true },
+      { key: 'climateRiskAssessmentDate', label: 'Most Recent Assessment Date', type: 'date', framework: 'TCFD, CSRD E1', required: false },
+      { key: 'physicalRisksIdentified', label: 'Number of Physical Risks Identified', type: 'number', framework: 'TCFD, CSRD E1-1', required: false, unit: 'risks' },
+      { key: 'transitionRisksIdentified', label: 'Number of Transition Risks Identified', type: 'number', framework: 'TCFD, CSRD E1-1', required: false, unit: 'risks' },
+      { key: 'climateScenarioAnalysis', label: 'Climate Scenario Analysis Performed', type: 'select', options: ['Yes - Multiple scenarios', 'Yes - Single scenario', 'No', 'Planned'], framework: 'TCFD, SBTi, CSRD E1-1', required: true },
+      { key: 'climateRiskHorizon', label: 'Climate Risk Time Horizon', type: 'select', options: ['Short-term (0-3 years)', 'Medium-term (3-10 years)', 'Long-term (10+ years)', 'Multiple horizons'], framework: 'TCFD, CSRD E1', required: false },
+      { key: 'climateRiskIntegration', label: 'Climate Risks Integrated into ERM', type: 'select', options: ['Fully integrated', 'Partially integrated', 'Separate process', 'Not integrated'], framework: 'TCFD, GRI 2-12', required: true },
+    ]
+  },
+  {
+    id: 'strategic',
+    name: 'Strategic & Business Risks',
+    icon: 'Target',
+    description: 'Market, regulatory, and competitive risks',
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-50',
+    fields: [
+      { key: 'strategicRisksIdentified', label: 'Strategic Risks Identified', type: 'number', framework: 'GRI 2-12, CSRD GOV-1', required: false, unit: 'risks' },
+      { key: 'marketRisksAssessed', label: 'Market Risks Regularly Assessed', type: 'select', options: ['Yes', 'No', 'Ad hoc'], framework: 'GRI 2-12', required: true },
+      { key: 'reputationalRisksMonitored', label: 'Reputational Risk Monitoring', type: 'select', options: ['Continuous', 'Periodic', 'Reactive', 'None'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
+      { key: 'competitiveRisksTracked', label: 'Competitive Risks Tracked', type: 'select', options: ['Yes', 'No'], framework: 'GRI 2-12', required: false },
+      { key: 'regulatoryRisksEvaluated', label: 'Regulatory Risk Assessment', type: 'select', options: ['Comprehensive', 'Partial', 'Minimal', 'None'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
+      { key: 'geopoliticalRisksConsidered', label: 'Geopolitical Risks Considered', type: 'select', options: ['Yes - Systematically', 'Yes - Ad hoc', 'No'], framework: 'GRI 2-12', required: false },
+    ]
+  },
+  {
+    id: 'operational',
+    name: 'Operational Risks',
+    icon: 'Activity',
+    description: 'Supply chain, technology, and process risks',
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-50',
+    fields: [
+      { key: 'operationalRiskRegister', label: 'Operational Risk Register Maintained', type: 'select', options: ['Yes - Updated regularly', 'Yes - Static', 'No'], framework: 'GRI 2-12', required: true },
+      { key: 'supplyChainRisksAssessed', label: 'Supply Chain Risk Assessment', type: 'select', options: ['Comprehensive', 'Critical suppliers only', 'Limited', 'None'], framework: 'GRI 2-12, CSRD E1, CDP', required: true },
+      { key: 'technologyRisksEvaluated', label: 'Technology & IT Risks Evaluated', type: 'select', options: ['Yes', 'No'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
+      { key: 'processFailureRisks', label: 'Process Failure Risks Identified', type: 'number', framework: 'GRI 2-12', required: false, unit: 'risks' },
+      { key: 'humanResourceRisks', label: 'HR & Talent Risks Assessed', type: 'select', options: ['Yes', 'No'], framework: 'GRI 2-12, CSRD S1', required: false },
+      { key: 'facilityRisks', label: 'Facility & Infrastructure Risks', type: 'select', options: ['Assessed', 'Partially assessed', 'Not assessed'], framework: 'GRI 2-12', required: false },
+    ]
+  },
+  {
+    id: 'financial',
+    name: 'Financial Risks',
+    icon: 'TrendingDown',
+    description: 'Credit, liquidity, and market risks',
+    color: 'text-red-600',
+    bgColor: 'bg-red-50',
+    fields: [
+      { key: 'financialRiskFramework', label: 'Financial Risk Management Framework', type: 'select', options: ['Comprehensive', 'Basic', 'None'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
+      { key: 'creditRiskManagement', label: 'Credit Risk Management Process', type: 'select', options: ['Formal process', 'Informal process', 'None'], framework: 'GRI 2-12', required: false },
+      { key: 'liquidityRiskMonitoring', label: 'Liquidity Risk Monitoring', type: 'select', options: ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'None'], framework: 'GRI 2-12', required: false },
+      { key: 'marketRiskExposure', label: 'Market Risk Exposure Assessment', type: 'select', options: ['Regular', 'Periodic', 'Rare', 'None'], framework: 'GRI 2-12', required: false },
+      { key: 'currencyRiskHedging', label: 'Currency Risk Hedging Strategy', type: 'select', options: ['Yes', 'No', 'Partial'], framework: 'GRI 2-12', required: false },
+      { key: 'interestRateRisk', label: 'Interest Rate Risk Management', type: 'select', options: ['Yes', 'No', 'Not applicable'], framework: 'GRI 2-12', required: false },
+    ]
+  },
+  {
+    id: 'cyber',
+    name: 'Cybersecurity & Data Risks',
+    icon: 'Lock',
+    description: 'Cyber threats, data privacy, and security',
+    color: 'text-teal-600',
+    bgColor: 'bg-teal-50',
+    fields: [
+      { key: 'cyberRiskFramework', label: 'Cybersecurity Risk Framework', type: 'select', options: ['NIST', 'ISO 27001', 'Custom', 'None'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
+      { key: 'dataPrivacyCompliance', label: 'Data Privacy Compliance', type: 'select', options: ['GDPR compliant', 'Other regulations', 'Partial', 'None'], framework: 'GRI 418-1, CSRD GOV-1', required: true },
+      { key: 'cyberIncidentsReported', label: 'Cyber Incidents Reported (past year)', type: 'number', framework: 'GRI 2-27, CSRD GOV-1', required: true, unit: 'incidents' },
+      { key: 'cyberInsuranceCoverage', label: 'Cyber Insurance Coverage', type: 'select', options: ['Yes - Comprehensive', 'Yes - Basic', 'No'], framework: 'GRI 2-12', required: false },
+      { key: 'securityAuditsFrequency', label: 'Security Audits Frequency', type: 'select', options: ['Continuous', 'Quarterly', 'Annually', 'None'], framework: 'GRI 2-12', required: true },
+      { key: 'incidentResponsePlan', label: 'Cyber Incident Response Plan', type: 'select', options: ['Yes - Tested', 'Yes - Not tested', 'In development', 'No'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
+      { key: 'dataBreaches', label: 'Data Breaches (past year)', type: 'number', framework: 'GRI 418-1', required: true, unit: 'breaches' },
+    ]
+  },
+  {
+    id: 'esg',
+    name: 'ESG & Sustainability Risks',
+    icon: 'Thermometer',
+    description: 'Environmental, social, and governance risks',
+    color: 'text-green-600',
+    bgColor: 'bg-green-50',
+    fields: [
+      { key: 'esgRiskAssessment', label: 'ESG Risk Assessment Conducted', type: 'select', options: ['Comprehensive', 'Partial', 'Planned', 'None'], framework: 'GRI 2-12, CSRD, SBTi', required: true },
+      { key: 'environmentalRisksTracked', label: 'Environmental Risks Tracked', type: 'number', framework: 'GRI 2-12, CSRD E1, CDP', required: false, unit: 'risks' },
+      { key: 'socialRisksEvaluated', label: 'Social Risks Evaluated', type: 'number', framework: 'GRI 2-12, CSRD S1, SDG', required: false, unit: 'risks' },
+      { key: 'governanceRisksMonitored', label: 'Governance Risks Monitored', type: 'number', framework: 'GRI 2-12, CSRD G1', required: false, unit: 'risks' },
+      { key: 'biodiversityRisks', label: 'Biodiversity Risks Assessed', type: 'select', options: ['Yes', 'No', 'Not applicable'], framework: 'CSRD E4, CDP, SDG 15', required: false },
+      { key: 'humanRightsRisks', label: 'Human Rights Risks Evaluated', type: 'select', options: ['Yes', 'No', 'In progress'], framework: 'GRI 2-12, CSRD S1, SDG 8', required: true },
+      { key: 'stakeholderRisks', label: 'Stakeholder-Related Risks', type: 'select', options: ['Identified', 'Partially identified', 'Not identified'], framework: 'GRI 2-12, CSRD', required: false },
+    ]
+  },
+  {
+    id: 'mitigation',
+    name: 'Risk Mitigation & Controls',
+    icon: 'CheckCircle2',
+    description: 'Risk response strategies and business continuity',
+    color: 'text-cyan-600',
+    bgColor: 'bg-cyan-50',
+    fields: [
+      { key: 'riskMitigationStrategies', label: 'Risk Mitigation Strategies Documented', type: 'select', options: ['All risks', 'Critical risks only', 'Some risks', 'None'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
+      { key: 'insuranceCoverage', label: 'Insurance Coverage Assessment', type: 'select', options: ['Comprehensive', 'Adequate', 'Limited', 'None'], framework: 'GRI 2-12', required: false },
+      { key: 'businessContinuityPlan', label: 'Business Continuity Plan', type: 'select', options: ['Yes - Tested regularly', 'Yes - Not tested', 'In development', 'No'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
+      { key: 'disasterRecoveryPlan', label: 'Disaster Recovery Plan', type: 'select', options: ['Yes - Tested', 'Yes - Not tested', 'No'], framework: 'GRI 2-12', required: true },
+      { key: 'crisisManagementTeam', label: 'Crisis Management Team Established', type: 'select', options: ['Yes', 'No'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
+      { key: 'emergencyResponseProcedures', label: 'Emergency Response Procedures', type: 'select', options: ['Comprehensive', 'Basic', 'None'], framework: 'GRI 2-12', required: false },
+    ]
+  },
+  {
+    id: 'monitoring',
+    name: 'Risk Monitoring & Reporting',
+    icon: 'BarChart3',
+    description: 'KRIs, reporting, and early warning systems',
+    color: 'text-violet-600',
+    bgColor: 'bg-violet-50',
+    fields: [
+      { key: 'riskMonitoringFrequency', label: 'Risk Monitoring Frequency', type: 'select', options: ['Continuous', 'Monthly', 'Quarterly', 'Annually'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
+      { key: 'riskReportingToBoard', label: 'Risk Reporting to Board', type: 'select', options: ['Monthly', 'Quarterly', 'Annually', 'Ad hoc'], framework: 'GRI 2-13, TCFD', required: true },
+      { key: 'keyRiskIndicators', label: 'Key Risk Indicators (KRIs) Defined', type: 'number', framework: 'GRI 2-12, CSRD GOV-1', required: false, unit: 'KRIs' },
+      { key: 'riskAppetiteStatement', label: 'Risk Appetite Statement Defined', type: 'select', options: ['Yes', 'No', 'In development'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
+      { key: 'riskToleranceLevels', label: 'Risk Tolerance Levels Set', type: 'select', options: ['All categories', 'Key categories', 'Some categories', 'None'], framework: 'GRI 2-12', required: false },
+      { key: 'earlyWarningSystem', label: 'Early Warning System for Risks', type: 'select', options: ['Yes', 'Partial', 'No'], framework: 'GRI 2-12, CSRD GOV-1', required: false },
+    ]
+  },
+  {
+    id: 'emerging',
+    name: 'Emerging Risks',
+    icon: 'AlertTriangle',
+    description: 'Future and evolving risk landscape',
+    color: 'text-amber-600',
+    bgColor: 'bg-amber-50',
+    fields: [
+      { key: 'emergingRisksProcess', label: 'Emerging Risk Identification Process', type: 'select', options: ['Formal process', 'Informal process', 'None'], framework: 'GRI 2-12, TCFD', required: true },
+      { key: 'aiRelatedRisks', label: 'AI & Automation-Related Risks Assessed', type: 'select', options: ['Yes', 'No', 'Planned'], framework: 'GRI 2-12, CSRD GOV-1', required: false },
+      { key: 'pandemicPreparedness', label: 'Pandemic Preparedness Plan', type: 'select', options: ['Yes', 'No', 'Under review'], framework: 'GRI 2-12', required: false },
+      { key: 'supplyChainResilience', label: 'Supply Chain Resilience Program', type: 'select', options: ['Comprehensive', 'Basic', 'None'], framework: 'GRI 2-12, CDP, CSRD', required: true },
+      { key: 'climateAdaptationPlanning', label: 'Climate Adaptation Planning', type: 'select', options: ['Yes', 'In development', 'No'], framework: 'TCFD, CSRD E1, SBTi', required: true },
+      { key: 'energyTransitionRisks', label: 'Energy Transition Risks Evaluated', type: 'select', options: ['Yes', 'Partial', 'No'], framework: 'TCFD, CSRD E1, SBTi', required: true },
+    ]
+  },
+]
+
 export default function RiskManagementCollection() {
   const navigate = useNavigate()
   const { createMetric, updateMetric, fetchMetrics, metrics, loading } = useESGMetrics({ 
@@ -184,7 +351,7 @@ export default function RiskManagementCollection() {
     let filledFields = 0
     
     // Count all fields in all categories
-    categories.forEach(category => {
+    riskCategories.forEach(category => {
       category.fields.forEach(field => {
         totalFields++
         const value = formData[field.key]
@@ -196,7 +363,7 @@ export default function RiskManagementCollection() {
     })
     
     return totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0
-  }, [formData, categories])
+  }, [formData])
 
   // Load existing data on mount
   useEffect(() => {
@@ -296,176 +463,9 @@ export default function RiskManagementCollection() {
     }
   }, [progress, formData, existingMetricId, createMetric, updateMetric, navigate])
 
-  // Field categories for organization
-  const categories = [
-    {
-      id: 'framework',
-      name: 'Enterprise Risk Management Framework',
-      icon: Shield,
-      description: 'Overall risk management structure and governance',
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-50',
-      fields: [
-        { key: 'ermFrameworkExists', label: 'ERM Framework Established', type: 'select', options: ['Yes', 'No', 'In Development'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
-        { key: 'ermFrameworkStandard', label: 'Framework Standard', type: 'select', options: ['COSO ERM', 'ISO 31000', 'Custom', 'Other'], framework: 'GRI 2-12', required: false },
-        { key: 'ermLastReview', label: 'Framework Last Reviewed', type: 'date', framework: 'GRI 2-12', required: false },
-        { key: 'boardOversightFrequency', label: 'Board Risk Oversight Frequency', type: 'select', options: ['Monthly', 'Quarterly', 'Semi-annually', 'Annually'], framework: 'GRI 2-13, TCFD Governance', required: true },
-        { key: 'riskCommitteeExists', label: 'Dedicated Risk Committee', type: 'select', options: ['Yes', 'No'], framework: 'GRI 2-13, CSRD GOV-1', required: true },
-        { key: 'chiefRiskOfficer', label: 'Chief Risk Officer Appointed', type: 'select', options: ['Yes', 'No'], framework: 'GRI 2-13', required: false },
-      ]
-    },
-    {
-      id: 'climate',
-      name: 'Climate-Related Risks (TCFD)',
-      icon: Cloud,
-      description: 'Physical and transition climate risks',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      fields: [
-        { key: 'climateRiskAssessmentConducted', label: 'Climate Risk Assessment Conducted', type: 'select', options: ['Yes', 'No', 'In Progress'], framework: 'TCFD, GRI 201-2, CSRD E1', required: true },
-        { key: 'climateRiskAssessmentDate', label: 'Most Recent Assessment Date', type: 'date', framework: 'TCFD, CSRD E1', required: false },
-        { key: 'physicalRisksIdentified', label: 'Number of Physical Risks Identified', type: 'number', framework: 'TCFD, CSRD E1-1', required: false, unit: 'risks' },
-        { key: 'transitionRisksIdentified', label: 'Number of Transition Risks Identified', type: 'number', framework: 'TCFD, CSRD E1-1', required: false, unit: 'risks' },
-        { key: 'climateScenarioAnalysis', label: 'Climate Scenario Analysis Performed', type: 'select', options: ['Yes - Multiple scenarios', 'Yes - Single scenario', 'No', 'Planned'], framework: 'TCFD, SBTi, CSRD E1-1', required: true },
-        { key: 'climateRiskHorizon', label: 'Climate Risk Time Horizon', type: 'select', options: ['Short-term (0-3 years)', 'Medium-term (3-10 years)', 'Long-term (10+ years)', 'Multiple horizons'], framework: 'TCFD, CSRD E1', required: false },
-        { key: 'climateRiskIntegration', label: 'Climate Risks Integrated into ERM', type: 'select', options: ['Fully integrated', 'Partially integrated', 'Separate process', 'Not integrated'], framework: 'TCFD, GRI 2-12', required: true },
-      ]
-    },
-    {
-      id: 'strategic',
-      name: 'Strategic & Business Risks',
-      icon: Target,
-      description: 'Market, regulatory, and competitive risks',
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-      fields: [
-        { key: 'strategicRisksIdentified', label: 'Strategic Risks Identified', type: 'number', framework: 'GRI 2-12, CSRD GOV-1', required: false, unit: 'risks' },
-        { key: 'marketRisksAssessed', label: 'Market Risks Regularly Assessed', type: 'select', options: ['Yes', 'No', 'Ad hoc'], framework: 'GRI 2-12', required: true },
-        { key: 'reputationalRisksMonitored', label: 'Reputational Risk Monitoring', type: 'select', options: ['Continuous', 'Periodic', 'Reactive', 'None'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
-        { key: 'competitiveRisksTracked', label: 'Competitive Risks Tracked', type: 'select', options: ['Yes', 'No'], framework: 'GRI 2-12', required: false },
-        { key: 'regulatoryRisksEvaluated', label: 'Regulatory Risk Assessment', type: 'select', options: ['Comprehensive', 'Partial', 'Minimal', 'None'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
-        { key: 'geopoliticalRisksConsidered', label: 'Geopolitical Risks Considered', type: 'select', options: ['Yes - Systematically', 'Yes - Ad hoc', 'No'], framework: 'GRI 2-12', required: false },
-      ]
-    },
-    {
-      id: 'operational',
-      name: 'Operational Risks',
-      icon: Activity,
-      description: 'Supply chain, technology, and process risks',
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-      fields: [
-        { key: 'operationalRiskRegister', label: 'Operational Risk Register Maintained', type: 'select', options: ['Yes - Updated regularly', 'Yes - Static', 'No'], framework: 'GRI 2-12', required: true },
-        { key: 'supplyChainRisksAssessed', label: 'Supply Chain Risk Assessment', type: 'select', options: ['Comprehensive', 'Critical suppliers only', 'Limited', 'None'], framework: 'GRI 2-12, CSRD E1, CDP', required: true },
-        { key: 'technologyRisksEvaluated', label: 'Technology & IT Risks Evaluated', type: 'select', options: ['Yes', 'No'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
-        { key: 'processFailureRisks', label: 'Process Failure Risks Identified', type: 'number', framework: 'GRI 2-12', required: false, unit: 'risks' },
-        { key: 'humanResourceRisks', label: 'HR & Talent Risks Assessed', type: 'select', options: ['Yes', 'No'], framework: 'GRI 2-12, CSRD S1', required: false },
-        { key: 'facilityRisks', label: 'Facility & Infrastructure Risks', type: 'select', options: ['Assessed', 'Partially assessed', 'Not assessed'], framework: 'GRI 2-12', required: false },
-      ]
-    },
-    {
-      id: 'financial',
-      name: 'Financial Risks',
-      icon: TrendingDown,
-      description: 'Credit, liquidity, and market risks',
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
-      fields: [
-        { key: 'financialRiskFramework', label: 'Financial Risk Management Framework', type: 'select', options: ['Comprehensive', 'Basic', 'None'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
-        { key: 'creditRiskManagement', label: 'Credit Risk Management Process', type: 'select', options: ['Formal process', 'Informal process', 'None'], framework: 'GRI 2-12', required: false },
-        { key: 'liquidityRiskMonitoring', label: 'Liquidity Risk Monitoring', type: 'select', options: ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'None'], framework: 'GRI 2-12', required: false },
-        { key: 'marketRiskExposure', label: 'Market Risk Exposure Assessment', type: 'select', options: ['Regular', 'Periodic', 'Rare', 'None'], framework: 'GRI 2-12', required: false },
-        { key: 'currencyRiskHedging', label: 'Currency Risk Hedging Strategy', type: 'select', options: ['Yes', 'No', 'Partial'], framework: 'GRI 2-12', required: false },
-        { key: 'interestRateRisk', label: 'Interest Rate Risk Management', type: 'select', options: ['Yes', 'No', 'Not applicable'], framework: 'GRI 2-12', required: false },
-      ]
-    },
-    {
-      id: 'cyber',
-      name: 'Cybersecurity & Data Risks',
-      icon: Lock,
-      description: 'Cyber threats, data privacy, and security',
-      color: 'text-teal-600',
-      bgColor: 'bg-teal-50',
-      fields: [
-        { key: 'cyberRiskFramework', label: 'Cybersecurity Risk Framework', type: 'select', options: ['NIST', 'ISO 27001', 'Custom', 'None'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
-        { key: 'dataPrivacyCompliance', label: 'Data Privacy Compliance', type: 'select', options: ['GDPR compliant', 'Other regulations', 'Partial', 'None'], framework: 'GRI 418-1, CSRD GOV-1', required: true },
-        { key: 'cyberIncidentsReported', label: 'Cyber Incidents Reported (past year)', type: 'number', framework: 'GRI 2-27, CSRD GOV-1', required: true, unit: 'incidents' },
-        { key: 'cyberInsuranceCoverage', label: 'Cyber Insurance Coverage', type: 'select', options: ['Yes - Comprehensive', 'Yes - Basic', 'No'], framework: 'GRI 2-12', required: false },
-        { key: 'securityAuditsFrequency', label: 'Security Audits Frequency', type: 'select', options: ['Continuous', 'Quarterly', 'Annually', 'None'], framework: 'GRI 2-12', required: true },
-        { key: 'incidentResponsePlan', label: 'Cyber Incident Response Plan', type: 'select', options: ['Yes - Tested', 'Yes - Not tested', 'In development', 'No'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
-        { key: 'dataBreaches', label: 'Data Breaches (past year)', type: 'number', framework: 'GRI 418-1', required: true, unit: 'breaches' },
-      ]
-    },
-    {
-      id: 'esg',
-      name: 'ESG & Sustainability Risks',
-      icon: Thermometer,
-      description: 'Environmental, social, and governance risks',
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      fields: [
-        { key: 'esgRiskAssessment', label: 'ESG Risk Assessment Conducted', type: 'select', options: ['Comprehensive', 'Partial', 'Planned', 'None'], framework: 'GRI 2-12, CSRD, SBTi', required: true },
-        { key: 'environmentalRisksTracked', label: 'Environmental Risks Tracked', type: 'number', framework: 'GRI 2-12, CSRD E1, CDP', required: false, unit: 'risks' },
-        { key: 'socialRisksEvaluated', label: 'Social Risks Evaluated', type: 'number', framework: 'GRI 2-12, CSRD S1, SDG', required: false, unit: 'risks' },
-        { key: 'governanceRisksMonitored', label: 'Governance Risks Monitored', type: 'number', framework: 'GRI 2-12, CSRD G1', required: false, unit: 'risks' },
-        { key: 'biodiversityRisks', label: 'Biodiversity Risks Assessed', type: 'select', options: ['Yes', 'No', 'Not applicable'], framework: 'CSRD E4, CDP, SDG 15', required: false },
-        { key: 'humanRightsRisks', label: 'Human Rights Risks Evaluated', type: 'select', options: ['Yes', 'No', 'In progress'], framework: 'GRI 2-12, CSRD S1, SDG 8', required: true },
-        { key: 'stakeholderRisks', label: 'Stakeholder-Related Risks', type: 'select', options: ['Identified', 'Partially identified', 'Not identified'], framework: 'GRI 2-12, CSRD', required: false },
-      ]
-    },
-    {
-      id: 'mitigation',
-      name: 'Risk Mitigation & Controls',
-      icon: CheckCircle2,
-      description: 'Risk response strategies and business continuity',
-      color: 'text-cyan-600',
-      bgColor: 'bg-cyan-50',
-      fields: [
-        { key: 'riskMitigationStrategies', label: 'Risk Mitigation Strategies Documented', type: 'select', options: ['All risks', 'Critical risks only', 'Some risks', 'None'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
-        { key: 'insuranceCoverage', label: 'Insurance Coverage Assessment', type: 'select', options: ['Comprehensive', 'Adequate', 'Limited', 'None'], framework: 'GRI 2-12', required: false },
-        { key: 'businessContinuityPlan', label: 'Business Continuity Plan', type: 'select', options: ['Yes - Tested regularly', 'Yes - Not tested', 'In development', 'No'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
-        { key: 'disasterRecoveryPlan', label: 'Disaster Recovery Plan', type: 'select', options: ['Yes - Tested', 'Yes - Not tested', 'No'], framework: 'GRI 2-12', required: true },
-        { key: 'crisisManagementTeam', label: 'Crisis Management Team Established', type: 'select', options: ['Yes', 'No'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
-        { key: 'emergencyResponseProcedures', label: 'Emergency Response Procedures', type: 'select', options: ['Comprehensive', 'Basic', 'None'], framework: 'GRI 2-12', required: false },
-      ]
-    },
-    {
-      id: 'monitoring',
-      name: 'Risk Monitoring & Reporting',
-      icon: BarChart3,
-      description: 'KRIs, reporting, and early warning systems',
-      color: 'text-violet-600',
-      bgColor: 'bg-violet-50',
-      fields: [
-        { key: 'riskMonitoringFrequency', label: 'Risk Monitoring Frequency', type: 'select', options: ['Continuous', 'Monthly', 'Quarterly', 'Annually'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
-        { key: 'riskReportingToBoard', label: 'Risk Reporting to Board', type: 'select', options: ['Monthly', 'Quarterly', 'Annually', 'Ad hoc'], framework: 'GRI 2-13, TCFD', required: true },
-        { key: 'keyRiskIndicators', label: 'Key Risk Indicators (KRIs) Defined', type: 'number', framework: 'GRI 2-12, CSRD GOV-1', required: false, unit: 'KRIs' },
-        { key: 'riskAppetiteStatement', label: 'Risk Appetite Statement Defined', type: 'select', options: ['Yes', 'No', 'In development'], framework: 'GRI 2-12, CSRD GOV-1', required: true },
-        { key: 'riskToleranceLevels', label: 'Risk Tolerance Levels Set', type: 'select', options: ['All categories', 'Key categories', 'Some categories', 'None'], framework: 'GRI 2-12', required: false },
-        { key: 'earlyWarningSystem', label: 'Early Warning System for Risks', type: 'select', options: ['Yes', 'Partial', 'No'], framework: 'GRI 2-12, CSRD GOV-1', required: false },
-      ]
-    },
-    {
-      id: 'emerging',
-      name: 'Emerging Risks',
-      icon: AlertTriangle,
-      description: 'Future and evolving risk landscape',
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-50',
-      fields: [
-        { key: 'emergingRisksProcess', label: 'Emerging Risk Identification Process', type: 'select', options: ['Formal process', 'Informal process', 'None'], framework: 'GRI 2-12, TCFD', required: true },
-        { key: 'aiRelatedRisks', label: 'AI & Automation-Related Risks Assessed', type: 'select', options: ['Yes', 'No', 'Planned'], framework: 'GRI 2-12, CSRD GOV-1', required: false },
-        { key: 'pandemicPreparedness', label: 'Pandemic Preparedness Plan', type: 'select', options: ['Yes', 'No', 'Under review'], framework: 'GRI 2-12', required: false },
-        { key: 'supplyChainResilience', label: 'Supply Chain Resilience Program', type: 'select', options: ['Comprehensive', 'Basic', 'None'], framework: 'GRI 2-12, CDP, CSRD', required: true },
-        { key: 'climateAdaptationPlanning', label: 'Climate Adaptation Planning', type: 'select', options: ['Yes', 'In development', 'No'], framework: 'TCFD, CSRD E1, SBTi', required: true },
-        { key: 'energyTransitionRisks', label: 'Energy Transition Risks Evaluated', type: 'select', options: ['Yes', 'Partial', 'No'], framework: 'TCFD, CSRD E1, SBTi', required: true },
-      ]
-    },
-  ]
-
   // Calculate field counts per category
   const categoryProgress = useMemo(() => {
-    return categories.map(cat => {
+    return riskCategories.map(cat => {
       const fields = cat.fields
       const filled = fields.filter(f => formData[f.key] !== '').length
       return {
@@ -475,7 +475,7 @@ export default function RiskManagementCollection() {
         total: fields.length
       }
     })
-  }, [formData, categories])
+  }, [formData])
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
@@ -545,7 +545,7 @@ export default function RiskManagementCollection() {
 
         {/* Data Collection Forms */}
         <div className="space-y-6">
-          {categories.map(category => (
+          {riskCategories.map(category => (
             <div key={category.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
               <div className={`${category.bgColor} px-6 py-4 border-l-4 border-indigo-500`}>
                 <div className="flex items-center gap-3">
