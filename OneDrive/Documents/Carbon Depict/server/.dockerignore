@@ -1,59 +1,68 @@
 # Dependencies
-node_modules
-npm-debug.log*
-
-# Build outputs (server doesn't have build step)
-dist
-build
+node_modules/
+npm-debug.log
+yarn-error.log
 
 # Environment files
-.env
 .env.local
-.env.production
 .env.development
-
-# Logs
-logs
-*.log
-
-# Testing
-coverage
-test
-
-# Development files
-nodemon.json
-.prettierrc
-.eslintrc*
-
-# Uploads (will be mounted as volume)
-uploads/*
-!uploads/.gitkeep
-
-# Database files
-*.sqlite
-*.sqlite3
-*.db
-
-# Temporary files
-tmp
-*.tmp
-
-# OS files
-.DS_Store
-Thumbs.db
+.env.test
 
 # IDE
-.vscode
-.idea
+.vscode/
+.idea/
+*.swp
+*.swo
+.cursor/
 
-# Docker
-.dockerignore
-Dockerfile*
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Git
+.git/
+.gitignore
+.gitattributes
 
 # Documentation
 *.md
 !README.md
+docs/
 
-# Git
-.git
-.gitignore
+# Test files
+test/
+__tests__/
+*.test.js
+*.spec.js
+test-*.js
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.backup
+*.bak
+
+# Logs
+*.log
+logs/
+
+# Scripts (not needed in production)
+scripts/
+*.ps1
+*.sh
+*.bat
+
+# Uploads and data
+uploads/
+database/
+*.db
+
+# Build artifacts
+dist/
+build/

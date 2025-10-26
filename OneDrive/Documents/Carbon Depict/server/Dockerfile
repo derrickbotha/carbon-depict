@@ -1,7 +1,7 @@
 # Multi-stage build for production-optimized Carbon Depict backend
 
 # Stage 1: Dependencies stage
-FROM node:18-alpine AS dependencies
+FROM node:20-alpine AS dependencies
 
 # Set working directory
 WORKDIR /app
@@ -10,27 +10,10 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install only production dependencies
-RUN npm ci --only=production
+RUN npm ci --only=production --legacy-peer-deps
 
-# Stage 2: Build stage
-FROM node:18-alpine AS builder
-
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install all dependencies (including dev dependencies)
-RUN npm ci
-
-# Copy source code
-COPY . .
-
-# Run any build steps if needed (tests, linting, etc.)
-# RUN npm run test
-
-# Stage 3: Production stage
-FROM node:18-alpine AS production
+# Stage 2: Production stage
+FROM node:20-alpine AS production
 
 # Set NODE_ENV to production
 ENV NODE_ENV=production
@@ -42,15 +25,18 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Copy package files and production dependencies
-COPY package*.json ./
-COPY --from=dependencies /app/node_modules ./node_modules
+# Copy package files
+COPY --chown=nodejs:nodejs package*.json ./
+
+# Copy production dependencies from dependencies stage
+COPY --from=dependencies --chown=nodejs:nodejs /app/node_modules ./node_modules
 
 # Copy application code
-COPY . .
+COPY --chown=nodejs:nodejs . .
 
-# Change ownership to nodejs user
-RUN chown -R nodejs:nodejs /app
+# Create directories for uploads and logs
+RUN mkdir -p /app/uploads /app/logs && \
+    chown -R nodejs:nodejs /app/uploads /app/logs
 
 # Switch to non-root user
 USER nodejs
@@ -59,7 +45,7 @@ USER nodejs
 EXPOSE 5500
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5500/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start the application

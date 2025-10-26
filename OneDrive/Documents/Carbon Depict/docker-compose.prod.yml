@@ -1,0 +1,192 @@
+version: '3.8'
+
+services:
+  # Backend API (Production)
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: carbon-depict-api-prod
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 5500
+      
+      # Database connections
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-carbonuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-carbonpass123}
+      POSTGRES_DB: ${POSTGRES_DB:-carbondepict}
+      
+      MONGO_URI: mongodb://${MONGO_USER:-carbonadmin}:${MONGO_PASSWORD:-mongopass123}@mongodb:27017/${MONGO_DB:-carbondepict}?authSource=admin
+      
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass123}
+      
+      # Security
+      JWT_SECRET: ${JWT_SECRET:-CHANGE_THIS_IN_PRODUCTION}
+      SESSION_SECRET: ${SESSION_SECRET:-CHANGE_THIS_IN_PRODUCTION}
+      JWT_EXPIRE: ${JWT_EXPIRE:-7d}
+      
+      # API Keys
+      DEFRA_API_KEY: ${DEFRA_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      
+      # CORS
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3500}
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:3500}
+      
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-5500}:5500"
+    volumes:
+      - ./server/uploads:/app/uploads
+      - ./server/logs:/app/logs
+    networks:
+      - carbon-depict-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5500/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 512M
+
+  # Frontend Application (Production)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: carbon-depict-app-prod
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:5500/api}
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-3500}:3500"
+    networks:
+      - carbon-depict-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3500"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: carbon-depict-db-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-carbonuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-carbonpass123}
+      POSTGRES_DB: ${POSTGRES_DB:-carbondepict}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./server/database/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-carbonuser} -d ${POSTGRES_DB:-carbondepict}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - carbon-depict-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+
+  # MongoDB
+  mongodb:
+    image: mongo:7-jammy
+    container_name: carbon-depict-mongodb-prod
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-carbonadmin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mongopass123}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-carbondepict}
+    volumes:
+      - mongodb-data:/data/db
+      - mongodb-config:/data/configdb
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - carbon-depict-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: carbon-depict-redis-prod
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redispass123}
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - carbon-depict-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+volumes:
+  postgres-data:
+    driver: local
+  mongodb-data:
+    driver: local
+  mongodb-config:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  carbon-depict-network:
+    driver: bridge
+
