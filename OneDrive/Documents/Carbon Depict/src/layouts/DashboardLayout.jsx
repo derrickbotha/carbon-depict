@@ -37,6 +37,7 @@ export default function DashboardLayout() {
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', strokeWidth: 2 },
+    { icon: BarChart3, label: 'Executive View', href: '/dashboard/executive', strokeWidth: 2 },
     { icon: Leaf, label: 'ESG', href: '/dashboard/esg', strokeWidth: 2 },
     { icon: BarChart3, label: 'Emissions', href: '/dashboard/emissions', strokeWidth: 2 },
     { icon: FileText, label: 'Reports', href: '/dashboard/reports', strokeWidth: 2 },

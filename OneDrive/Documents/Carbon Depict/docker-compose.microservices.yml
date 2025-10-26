@@ -1,0 +1,305 @@
+version: '3.8'
+
+# Microservices Architecture - Emissions & ESG Separation
+# Each service runs independently but shares the same database
+
+services:
+  # Shared Infrastructure - PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: carbon-depict-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-carbonuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-carbonpass123}
+      POSTGRES_DB: ${POSTGRES_DB:-carbondepict}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-carbonuser}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - carbon-depict-network
+
+  # Shared Infrastructure - MongoDB Database
+  mongodb:
+    image: mongo:7-jammy
+    container_name: carbon-depict-mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-carbonadmin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mongopass123}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-carbondepict}
+    volumes:
+      - mongodb-data:/data/db
+      - mongodb-config:/data/configdb
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - carbon-depict-network
+
+  # Shared Infrastructure - Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: carbon-depict-redis
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redispass123}
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - carbon-depict-network
+
+  # Emissions Service - Handles all emission calculations
+  emissions-service:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: carbon-depict-emissions
+    restart: always
+    command: node index.js --service=emissions
+    environment:
+      NODE_ENV: production
+      SERVICE_NAME: emissions
+      PORT: 5501
+      
+      # Shared Database Connections
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-carbonuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-carbonpass123}
+      POSTGRES_DB: ${POSTGRES_DB:-carbondepict}
+      
+      MONGO_URI: mongodb://${MONGO_USER:-carbonadmin}:${MONGO_PASSWORD:-mongopass123}@mongodb:27017/${MONGO_DB:-carbondepict}?authSource=admin
+      
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass123}
+      
+      # Security
+      JWT_SECRET: ${JWT_SECRET:-CHANGE_THIS_IN_PRODUCTION}
+      SESSION_SECRET: ${SESSION_SECRET:-CHANGE_THIS_IN_PRODUCTION}
+      
+      # API Keys
+      DEFRA_API_KEY: ${DEFRA_API_KEY:-}
+      
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "5501:5501"
+    volumes:
+      - ./server/uploads:/app/uploads
+      - ./server/logs:/app/logs/emissions
+    networks:
+      - carbon-depict-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5501/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ESG Service - Handles all ESG data collection and metrics
+  esg-service:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: carbon-depict-esg
+    restart: always
+    command: node index.js --service=esg
+    environment:
+      NODE_ENV: production
+      SERVICE_NAME: esg
+      PORT: 5502
+      
+      # Shared Database Connections
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-carbonuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-carbonpass123}
+      POSTGRES_DB: ${POSTGRES_DB:-carbondepict}
+      
+      MONGO_URI: mongodb://${MONGO_USER:-carbonadmin}:${MONGO_PASSWORD:-mongopass123}@mongodb:27017/${MONGO_DB:-carbondepict}?authSource=admin
+      
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass123}
+      
+      # Security
+      JWT_SECRET: ${JWT_SECRET:-CHANGE_THIS_IN_PRODUCTION}
+      SESSION_SECRET: ${SESSION_SECRET:-CHANGE_THIS_IN_PRODUCTION}
+      
+      # API Keys
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "5502:5502"
+    volumes:
+      - ./server/uploads:/app/uploads
+      - ./server/logs:/app/logs/esg
+    networks:
+      - carbon-depict-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5502/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # API Gateway - Routes requests to appropriate service
+  api-gateway:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: carbon-depict-gateway
+    restart: always
+    command: node index.js --service=gateway
+    environment:
+      NODE_ENV: production
+      SERVICE_NAME: gateway
+      PORT: 5500
+      
+      # Shared Database Connections
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-carbonuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-carbonpass123}
+      POSTGRES_DB: ${POSTGRES_DB:-carbondepict}
+      
+      MONGO_URI: mongodb://${MONGO_USER:-carbonadmin}:${MONGO_PASSWORD:-mongopass123}@mongodb:27017/${MONGO_DB:-carbondepict}?authSource=admin
+      
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass123}
+      
+      # Security
+      JWT_SECRET: ${JWT_SECRET:-CHANGE_THIS_IN_PRODUCTION}
+      SESSION_SECRET: ${SESSION_SECRET:-CHANGE_THIS_IN_PRODUCTION}
+      
+      # Service URLs
+      EMISSIONS_SERVICE_URL: http://emissions-service:5501
+      ESG_SERVICE_URL: http://esg-service:5502
+      
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      emissions-service:
+        condition: service_healthy
+      esg-service:
+        condition: service_healthy
+    ports:
+      - "5500:5500"
+    volumes:
+      - ./server/logs:/app/logs/gateway
+    networks:
+      - carbon-depict-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5500/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Frontend Application
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: carbon-depict-app
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=http://localhost:5500/api
+      - VITE_EMISSIONS_API_URL=http://localhost:5501/api
+      - VITE_ESG_API_URL=http://localhost:5502/api
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    ports:
+      - "3500:3500"
+    networks:
+      - carbon-depict-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3500"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+volumes:
+  postgres-data:
+    driver: local
+  mongodb-data:
+    driver: local
+  mongodb-config:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  carbon-depict-network:
+    driver: bridge
+

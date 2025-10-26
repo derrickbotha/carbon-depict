@@ -37,6 +37,7 @@ import SocialDashboard from './pages/dashboard/SocialDashboard'
 import GovernanceDashboard from './pages/dashboard/GovernanceDashboard'
 import GHGInventory from './pages/dashboard/GHGInventory'
 import EnvironmentalDashboard from './pages/dashboard/EnvironmentalDashboard'
+import ESGExecutiveDashboard from './pages/dashboard/ESGExecutiveDashboard'
 import EnergyManagementCollection from './pages/dashboard/EnergyManagementCollection'
 import EmployeeDemographicsCollection from './pages/dashboard/EmployeeDemographicsCollection'
 import HealthSafetyCollection from './pages/dashboard/HealthSafetyCollection'
@@ -87,6 +88,7 @@ function App() {
             }
           >
             <Route index element={<DashboardHome />} />
+            <Route path="executive" element={<ESGExecutiveDashboard />} />
             <Route path="emissions" element={<EmissionsDashboard />} />
             <Route path="emissions/scope1" element={<Scope1DataCollection />} />
             <Route path="emissions/scope2" element={<Scope2DataCollection />} />
