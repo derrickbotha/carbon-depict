@@ -390,7 +390,7 @@ export default function Scope2DataCollection() {
                           value={field.value}
                           onChange={(e) => handleInputChange(currentCategory, fieldKey, e.target.value)}
                           className="flex-1 rounded-lg border border-cd-border bg-white px-4 py-2 text-cd-text placeholder-cd-muted/50 focus:border-cd-teal focus:outline-none focus:ring-2 focus:ring-cd-teal/20"
-                          placeholder驚訝="Enter supplier name"
+                          placeholder="Enter supplier name"
                         />
                       ) : field.unit === 'select' ? (
                         <select
