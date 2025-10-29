@@ -267,12 +267,24 @@ router.post('/verify-email', async (req, res) => {
  */
 router.post('/login', [
   body('email').isEmail().normalizeEmail(),
-  body('password').notEmpty(),
+  body('password').notEmpty().withMessage('Password is required'),
 ], async (req, res) => {
   try {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
+      // Format validation errors into a user-friendly message
+      const errorMessages = errors.array().map(err => {
+        if (err.param === 'email') {
+          return 'Please provide a valid email address'
+        } else if (err.param === 'password') {
+          return 'Password is required'
+        }
+        return err.msg || `${err.param} is invalid`
+      })
+      return res.status(400).json({ 
+        error: errorMessages.join('. '),
+        errors: errors.array()
+      })
     }
 
     const { email, password } = req.body

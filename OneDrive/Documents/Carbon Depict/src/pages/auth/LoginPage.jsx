@@ -23,12 +23,31 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
+    // Client-side validation
+    if (!formData.email || !formData.email.trim()) {
+      setError('Please enter your email address')
+      setLoading(false)
+      return
+    }
+
+    if (!formData.email.includes('@')) {
+      setError('Please enter a valid email address')
+      setLoading(false)
+      return
+    }
+
+    if (!formData.password || !formData.password.trim()) {
+      setError('Please enter your password')
+      setLoading(false)
+      return
+    }
+
     console.log('=== LOGIN ATTEMPT ===')
     console.log('Email:', formData.email)
     console.log('Password length:', formData.password.length)
     console.log('Calling login function...')
 
-    const result = await login(formData.email, formData.password)
+    const result = await login(formData.email.trim(), formData.password)
 
     console.log('=== LOGIN RESULT ===')
     console.log('Success:', result.success)

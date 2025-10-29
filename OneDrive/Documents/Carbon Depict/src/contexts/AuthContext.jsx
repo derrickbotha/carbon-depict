@@ -115,6 +115,13 @@ export const AuthProvider = ({ children }) => {
       else if (err.response?.status === 429) {
         errorMessage = 'Too many login attempts. Please wait a moment and try again.';
       } 
+      // Handle validation errors (400)
+      else if (err.response?.status === 400) {
+        errorMessage = err.response?.data?.error || 
+                      err.response?.data?.message || 
+                      err.response?.data?.errors?.[0]?.msg ||
+                      'Invalid login credentials. Please check your email and password.';
+      }
       // Handle other API errors
       else {
         errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Login failed. Please try again.';
