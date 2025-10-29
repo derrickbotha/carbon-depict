@@ -16,6 +16,53 @@ const EmissionFactor = require('../models/mongodb/EmissionFactor')
 const GHGEmission = require('../models/mongodb/GHGEmission')
 
 /**
+ * In-memory cache for emission factors to reduce DB queries
+ * Cache TTL: 5 minutes (300000ms)
+ */
+const factorCache = new Map()
+const CACHE_TTL = 300000 // 5 minutes
+
+/**
+ * Get cache key for factor lookup
+ */
+function getCacheKey(category, type, region) {
+  return `${category}:${type}:${region || 'default'}`
+}
+
+/**
+ * Get cached factor or null
+ */
+function getCachedFactor(key) {
+  const cached = factorCache.get(key)
+  if (!cached) return null
+  
+  // Check if cache expired
+  if (Date.now() - cached.timestamp > CACHE_TTL) {
+    factorCache.delete(key)
+    return null
+  }
+  
+  return cached.data
+}
+
+/**
+ * Cache a factor
+ */
+function setCachedFactor(key, data) {
+  factorCache.set(key, {
+    data,
+    timestamp: Date.now()
+  })
+}
+
+/**
+ * Clear cache (useful for testing or manual refresh)
+ */
+function clearFactorCache() {
+  factorCache.clear()
+}
+
+/**
  * Embedded default emission factors (DEFRA 2025 / GHG Protocol compliant)
  * Used only as fallback when DB lookup fails
  */
@@ -108,15 +155,25 @@ const DEFAULT_FACTORS = {
  */
 class EmissionsCalculator {
   /**
-   * Resolve emission factor from DB first, then fall back to embedded defaults
+   * Resolve emission factor from cache first, then DB, then fall back to embedded defaults
    * Returns factor record with source, year, dataQuality metadata
+   * OPTIMIZED: Added in-memory caching to reduce DB queries
    */
   static async resolveFactor({ category, type, region = null }) {
-    // Try DB lookup first (using EmissionFactor model)
+    const cacheKey = getCacheKey(category, type, region)
+    
+    // Check cache first
+    const cached = getCachedFactor(cacheKey)
+    if (cached) {
+      return cached
+    }
+    
+    // Try DB lookup (using EmissionFactor model)
+    let factorRecord = null
     try {
       const dbRecord = await EmissionFactor.getCurrentFactor(category, type, region || 'UK')
       if (dbRecord && dbRecord.factor != null) {
-        return {
+        factorRecord = {
           factor: dbRecord.factor,
           unit: dbRecord.unit,
           source: dbRecord.source || 'emissionfactor_db',
@@ -126,6 +183,9 @@ class EmissionsCalculator {
           dataQuality: 'high', // DB factors are assumed high quality
           scope: dbRecord.scope?.toLowerCase().replace(' ', '') || null,
         }
+        // Cache the result
+        setCachedFactor(cacheKey, factorRecord)
+        return factorRecord
       }
     } catch (err) {
       console.warn('EmissionFactor DB lookup failed, using default:', err.message)
@@ -135,7 +195,7 @@ class EmissionsCalculator {
     const cat = DEFAULT_FACTORS[category]
     if (cat && cat[type]) {
       const d = cat[type]
-      return {
+      factorRecord = {
         factor: d.factor,
         unit: d.unit,
         source: d.source || 'embedded_defaults',
@@ -145,13 +205,16 @@ class EmissionsCalculator {
         dataQuality: 'medium', // Embedded defaults marked as medium quality
         scope: d.scope || null,
       }
+      // Cache defaults too (shorter TTL could be applied here if needed)
+      setCachedFactor(cacheKey, factorRecord)
+      return factorRecord
     }
 
     // Try electricity regional keys if category is electricity
     if (category === 'electricity' && region) {
       const alt = DEFAULT_FACTORS.electricity[region]
       if (alt) {
-        return {
+        factorRecord = {
           factor: alt.factor,
           unit: alt.unit,
           source: alt.source || 'embedded_defaults',
@@ -159,10 +222,20 @@ class EmissionsCalculator {
           dataQuality: 'medium',
           scope: alt.scope || 'scope2',
         }
+        setCachedFactor(cacheKey, factorRecord)
+        return factorRecord
       }
     }
 
     return null
+  }
+
+  /**
+   * Clear the emission factor cache
+   * Useful for refreshing factors after updates
+   */
+  static clearCache() {
+    clearFactorCache()
   }
 
   /**
