@@ -132,10 +132,13 @@ export default function LoginPage() {
             </div>
 
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2">
+              <label htmlFor="remember-me" className="flex items-center gap-2 cursor-pointer">
                 <input
+                  id="remember-me"
+                  name="remember-me"
                   type="checkbox"
                   className="h-4 w-4 rounded border-cd-border text-cd-midnight focus:ring-cd-desert"
+                  autoComplete="off"
                 />
                 <span className="text-sm text-cd-muted">Remember me</span>
               </label>

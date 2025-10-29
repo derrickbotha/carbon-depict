@@ -364,6 +364,8 @@ export default function Scope3DataCollection() {
                 </label>
                 <div className="flex gap-2">
                   <input
+                    id={`${currentCategory}-${fieldKey}`}
+                    name={`${currentCategory}-${fieldKey}`}
                     type={field.unit === 'text' ? 'text' : 'number'}
                     step={field.unit === 'text' ? undefined : '0.01'}
                     min={field.unit === 'text' ? undefined : '0'}

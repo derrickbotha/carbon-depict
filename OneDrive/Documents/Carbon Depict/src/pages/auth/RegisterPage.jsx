@@ -159,11 +159,14 @@ export default function RegisterPage() {
             />
 
             <div className="text-sm text-cd-muted">
-              <label className="flex items-start gap-2">
+              <label htmlFor="terms-accept" className="flex items-start gap-2 cursor-pointer">
                 <input
+                  id="terms-accept"
+                  name="terms-accept"
                   type="checkbox"
                   required
                   className="mt-1 h-4 w-4 rounded border-cd-border text-cd-midnight focus:ring-cd-desert"
+                  autoComplete="off"
                 />
                 <span>
                   I agree to the{' '}
