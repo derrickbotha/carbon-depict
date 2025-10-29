@@ -394,6 +394,8 @@ export default function Scope2DataCollection() {
                         />
                       ) : field.unit === 'select' ? (
                         <select
+                          id={`${currentCategory}-${fieldKey}`}
+                          name={`${currentCategory}-${fieldKey}`}
                           value={field.value}
                           onChange={(e) => handleInputChange(currentCategory, fieldKey, e.target.value)}
                           className="flex-1 rounded-lg border border-cd-border bg-white px-4 py-2 text-cd-text focus:border-cd-teal focus:outline-none focus:ring-2 focus:ring-cd-teal/20"
@@ -406,6 +408,8 @@ export default function Scope2DataCollection() {
                         </select>
                       ) : field.unit === 'boolean' ? (
                         <select
+                          id={`${currentCategory}-${fieldKey}`}
+                          name={`${currentCategory}-${fieldKey}`}
                           value={field.value}
                           onChange={(e) => handleInputChange(currentCategory, fieldKey, e.target.value)}
                           className="flex-1 rounded-lg border border-cd-border bg-white px-4 py-2 text-cd-text focus:border-cd-teal focus:outline-none focus:ring-2 focus:ring-cd-teal/20"
@@ -416,6 +420,8 @@ export default function Scope2DataCollection() {
                       ) : (
                         <>
                           <input
+                            id={`${currentCategory}-${fieldKey}`}
+                            name={`${currentCategory}-${fieldKey}`}
                             type="number"
                             step="0.01"
                             min="0"
