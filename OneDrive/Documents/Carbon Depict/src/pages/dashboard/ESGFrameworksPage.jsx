@@ -14,9 +14,9 @@ import {
   Leaf,
   Building2,
   Globe2,
-  ArrowRight
-  ,
-  Check
+  ArrowRight,
+  Check,
+  DollarSign
 } from '@atoms/Icon'
 import esgDataManager from '../../utils/esgDataManager'
 
@@ -27,7 +27,10 @@ const ESGFrameworksPage = () => {
     sbti: { progress: 0, score: 0, completedFields: 0, totalFields: 0 },
     csrd: { progress: 0, score: 0, completedFields: 0, totalFields: 0 },
     cdp: { progress: 0, score: 0, completedFields: 0, totalFields: 0 },
-    sdg: { progress: 0, score: 0, completedFields: 0, totalFields: 0 }
+    sdg: { progress: 0, score: 0, completedFields: 0, totalFields: 0 },
+    sasb: { progress: 0, score: 0, completedFields: 0, totalFields: 0 },
+    issb: { progress: 0, score: 0, completedFields: 0, totalFields: 0 },
+    pcaf: { progress: 0, score: 0, completedFields: 0, totalFields: 0 }
   })
 
   useEffect(() => {
@@ -69,6 +72,18 @@ const ESGFrameworksPage = () => {
       sdg: { 
         ...scores.frameworks.sdg, 
         ...getFieldCounts('sdg') 
+      },
+      sasb: { 
+        ...scores.frameworks.sasb, 
+        ...getFieldCounts('sasb') 
+      },
+      issb: { 
+        ...scores.frameworks.issb, 
+        ...getFieldCounts('issb') 
+      },
+      pcaf: { 
+        ...scores.frameworks.pcaf, 
+        ...getFieldCounts('pcaf') 
       }
     })
   }
@@ -246,6 +261,93 @@ const ESGFrameworksPage = () => {
         'Partnership Development',
         'Progress Reporting',
         'Innovation Opportunities'
+      ]
+    },
+    {
+      id: 'sasb',
+      name: 'SASB Standards',
+      fullName: 'Sustainability Accounting Standards Board',
+      description: 'Industry-specific standards for financially material sustainability information. 77 industries across 11 sectors.',
+      icon: DollarSign,
+      color: 'bg-emerald-500',
+      textColor: 'text-emerald-600',
+      bgLight: 'bg-emerald-50',
+      link: '/dashboard/esg/sasb',
+      category: 'Financial Materiality',
+      requirements: 'Industry-specific metrics',
+      certification: 'SASB Aligned',
+      adoptedBy: '2,000+ companies globally',
+      keyBenefits: [
+        'Investor-focused disclosures',
+        'Financial materiality',
+        'Industry-specific metrics',
+        'SEC filing integration'
+      ],
+      mainTopics: [
+        'Environment',
+        'Social Capital',
+        'Human Capital',
+        'Business Model & Innovation',
+        'Leadership & Governance',
+        'Industry Metrics'
+      ]
+    },
+    {
+      id: 'issb',
+      name: 'IFRS S1 & S2',
+      fullName: 'International Sustainability Standards Board',
+      description: 'Global baseline for sustainability disclosures (IFRS S1) and climate-related disclosures (IFRS S2). Incorporates TCFD and SASB.',
+      icon: Globe2,
+      color: 'bg-cyan-500',
+      textColor: 'text-cyan-600',
+      bgLight: 'bg-cyan-50',
+      link: '/dashboard/esg/issb',
+      category: 'Global Baseline',
+      requirements: 'S1 General + S2 Climate',
+      certification: 'ISSB Compliant',
+      adoptedBy: 'Jurisdictions adopting globally',
+      keyBenefits: [
+        'Global baseline standard',
+        'Investor decision-useful',
+        'Builds on TCFD & SASB',
+        'Enterprise value focus'
+      ],
+      mainTopics: [
+        'Governance',
+        'Strategy',
+        'Risk Management',
+        'Metrics & Targets',
+        'Climate Risks',
+        'Sustainability Opportunities'
+      ]
+    },
+    {
+      id: 'pcaf',
+      name: 'PCAF Standard',
+      fullName: 'Partnership for Carbon Accounting Financials',
+      description: 'Global standard for measuring and disclosing financed emissions from loans and investments. Covers 7 asset classes with data quality scoring.',
+      icon: DollarSign,
+      color: 'bg-slate-500',
+      textColor: 'text-slate-600',
+      bgLight: 'bg-slate-50',
+      link: '/dashboard/esg/pcaf',
+      category: 'Financed Emissions',
+      requirements: '7 asset classes, DQ scoring',
+      certification: 'PCAF Member',
+      adoptedBy: '400+ financial institutions',
+      keyBenefits: [
+        'Financed emissions calculation',
+        'Financial sector focus',
+        'Data quality framework',
+        'Portfolio decarbonization'
+      ],
+      mainTopics: [
+        'Listed Equity & Bonds',
+        'Business Loans',
+        'Project Finance',
+        'Commercial Real Estate',
+        'Mortgages & Motor Vehicles',
+        'Sovereign Debt'
       ]
     }
   ]

@@ -1,51 +1,69 @@
-// Cache bust 2025-10-23
+// Cache bust 2025-11-04
 export default function PricingPage() {
   const plans = [
     {
-      name: 'Starter',
-      price: 'Free',
-      description: 'Perfect for small businesses and students',
+      name: 'Essential',
+      price: '$2,500',
+      period: '/month',
+      billedAnnually: '$25,000/year',
+      description: 'For small to medium enterprises starting their ESG journey',
       features: [
-        'Up to 50 calculations per month',
-        'Basic emission categories',
-        'CSV export',
-        'Community support',
-        'DEFRA 2025 factors',
+        'Up to 10 users',
+        'Scope 1, 2 & 3 emissions tracking',
+        'GRI, CDP, TCFD reporting frameworks',
+        'Standard dashboards & analytics',
+        'PDF & Excel export',
+        'Email support (24-hour response)',
+        'Monthly data refresh',
+        'DEFRA, EPA, IEA emission factors',
+        'Basic API access (1,000 calls/month)',
       ],
-      cta: 'Get Started',
+      cta: 'Start Free Trial',
       popular: false,
     },
     {
       name: 'Professional',
-      price: '$49',
+      price: '$7,500',
       period: '/month',
-      description: 'For growing teams and mid-size companies',
+      billedAnnually: '$78,000/year',
+      description: 'For mid-market companies with advanced reporting needs',
       features: [
-        'Unlimited calculations',
-        'All emission categories',
-        'PDF & CSV export',
-        'Priority support',
-        'AI-powered insights',
-        'Multi-user access (5 users)',
-        'Excel/CSV upload',
-        'API access',
+        'Up to 50 users',
+        'Everything in Essential, plus:',
+        'Advanced AI-powered analytics & forecasting',
+        'Custom dashboards & KPI tracking',
+        'CSRD, SASB, ISSB compliance modules',
+        'Multi-entity & regional support',
+        'Supplier emissions management',
+        'Priority support (4-hour response)',
+        'Daily data refresh',
+        'Enhanced API (10,000 calls/month)',
+        'Single sign-on (SSO)',
+        'Quarterly business reviews',
       ],
-      cta: 'Start Free Trial',
+      cta: 'Request Demo',
       popular: true,
     },
     {
       name: 'Enterprise',
-      price: 'Custom',
-      description: 'For large organizations with complex needs',
+      price: 'Custom Pricing',
+      startingAt: 'Starting at $25,000/month',
+      description: 'For global organizations requiring full-scale ESG management',
       features: [
-        'Everything in Professional',
         'Unlimited users',
-        'Custom emission factors',
-        'Dedicated support',
-        'White-label reports',
-        'API integrations',
-        'Regional adaptations',
-        'Training & onboarding',
+        'Everything in Professional, plus:',
+        'Dedicated Customer Success Manager',
+        'Custom emission factors & methodologies',
+        'White-label reporting & branding',
+        'Advanced integrations (ERP, SAP, Oracle)',
+        'On-premise deployment option',
+        '24/7 premium support (1-hour response)',
+        'Real-time data synchronization',
+        'Unlimited API calls',
+        'Custom training & certification programs',
+        'Regulatory change management',
+        'Third-party audit support',
+        'Data residency controls',
       ],
       cta: 'Contact Sales',
       popular: false,
@@ -58,12 +76,32 @@ export default function PricingPage() {
         {/* Header */}
         <div className="mb-16 text-center">
           <h1 className="mb-4 text-4xl font-bold text-cd-text md:text-5xl">
-            Simple, transparent pricing
+            Enterprise ESG & Carbon Management
           </h1>
           <p className="mx-auto max-w-2xl text-lg text-cd-muted">
-            Choose the plan that fits your needs. All plans include DEFRA 2025 emission factors
-            and WRI-compliant calculations.
+            Scalable solutions for organizations of all sizes. All plans include comprehensive emission factors,
+            multi-framework compliance, and enterprise-grade security.
           </p>
+          <div className="mt-6 flex items-center justify-center gap-4">
+            <span className="inline-flex items-center gap-2 text-sm text-cd-muted">
+              <svg className="h-5 w-5 text-cd-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              14-day free trial
+            </span>
+            <span className="inline-flex items-center gap-2 text-sm text-cd-muted">
+              <svg className="h-5 w-5 text-cd-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              No credit card required
+            </span>
+            <span className="inline-flex items-center gap-2 text-sm text-cd-muted">
+              <svg className="h-5 w-5 text-cd-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Annual billing discount
+            </span>
+          </div>
         </div>
 
         {/* Pricing Cards */}
@@ -91,13 +129,23 @@ export default function PricingPage() {
               </p>
 
               <div className="mb-6">
-                <span className={`text-4xl font-bold ${plan.popular ? 'text-white' : 'text-cd-midnight'}`}>
+                <div className={`text-4xl font-bold ${plan.popular ? 'text-white' : 'text-cd-midnight'}`}>
                   {plan.price}
-                </span>
+                </div>
                 {plan.period && (
-                  <span className={plan.popular ? 'text-cd-desert' : 'text-cd-muted'}>
+                  <div className={`text-sm ${plan.popular ? 'text-cd-desert' : 'text-cd-muted'}`}>
                     {plan.period}
-                  </span>
+                  </div>
+                )}
+                {plan.billedAnnually && (
+                  <div className={`mt-1 text-xs ${plan.popular ? 'text-cd-desert' : 'text-cd-muted'}`}>
+                    Billed annually: {plan.billedAnnually}
+                  </div>
+                )}
+                {plan.startingAt && (
+                  <div className={`mt-1 text-sm italic ${plan.popular ? 'text-cd-desert' : 'text-cd-muted'}`}>
+                    {plan.startingAt}
+                  </div>
                 )}
               </div>
 
@@ -139,8 +187,38 @@ export default function PricingPage() {
 
         {/* FAQ Note */}
         <div className="mt-16 text-center">
+          <p className="mb-8 text-cd-muted">
+            All plans include: SOC 2 Type II compliance • GDPR & data privacy • 99.9% uptime SLA • Regular product updates
+          </p>
+          <div className="mb-8 rounded-lg bg-cd-sand/30 p-8">
+            <h3 className="mb-4 text-2xl font-bold text-cd-text">Volume & Multi-Year Discounts Available</h3>
+            <p className="mx-auto mb-4 max-w-3xl text-cd-muted">
+              Organizations with 100+ users or multi-year commitments qualify for significant discounts.
+              Our enterprise pricing is designed to scale with your organization's growth and sustainability goals.
+            </p>
+            <div className="flex flex-wrap justify-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <svg className="h-5 w-5 text-cd-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-cd-text">Flexible payment terms</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="h-5 w-5 text-cd-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-cd-text">Educational & non-profit discounts</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="h-5 w-5 text-cd-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-cd-text">Migration assistance from other platforms</span>
+              </div>
+            </div>
+          </div>
           <p className="text-cd-muted">
-            Need help choosing? <a href="/contact" className="text-cd-midnight underline">Contact our team</a>
+            Questions about pricing? <a href="/contact" className="font-medium text-cd-midnight underline">Schedule a consultation</a> with our team
           </p>
         </div>
       </div>

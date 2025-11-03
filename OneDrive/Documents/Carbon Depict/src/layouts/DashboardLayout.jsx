@@ -27,9 +27,12 @@ export default function DashboardLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const navigate = useNavigate()
-  const { user, logout, isAuthenticated, loading } = useAuth()
+  const { user, logout } = useAuth()
   
   const location = useLocation()
+
+  // TODO: Replace with actual auth check
+  const isAuthenticated = true // Placeholder
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
@@ -37,12 +40,15 @@ export default function DashboardLayout() {
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', strokeWidth: 2 },
-    { icon: BarChart3, label: 'Executive View', href: '/dashboard/executive', strokeWidth: 2 },
     { icon: Leaf, label: 'ESG', href: '/dashboard/esg', strokeWidth: 2 },
     { icon: BarChart3, label: 'Emissions', href: '/dashboard/emissions', strokeWidth: 2 },
     { icon: FileText, label: 'Reports', href: '/dashboard/reports', strokeWidth: 2 },
     { icon: Settings, label: 'Settings', href: '/dashboard/settings', strokeWidth: 2 },
   ]
+  
+  // Check if we're on emissions page to show materiality sub-link
+  const isEmissionsPath = location.pathname.startsWith('/dashboard/emissions')
+  const isMaterialityPath = location.pathname === '/dashboard/esg/materiality'
 
   const handleLogout = async () => {
     await logout()
@@ -84,21 +90,42 @@ export default function DashboardLayout() {
         <nav className="flex-1 space-y-1 p-4">
           {navItems.map((item) => {
             const isActive = location.pathname === item.href
+            const isEmissionsItem = item.href === '/dashboard/emissions'
+            
             return (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={clsx(
-                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-cd-surface text-cd-midnight border-l-3 border-cd-midnight'
-                    : 'text-cd-muted hover:bg-cd-surface hover:text-cd-midnight'
+              <div key={item.href}>
+                <Link
+                  to={item.href}
+                  className={clsx(
+                    'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-cd-surface text-cd-midnight border-l-3 border-cd-midnight'
+                      : 'text-cd-muted hover:bg-cd-surface hover:text-cd-midnight'
+                  )}
+                  title={!sidebarOpen ? item.label : undefined}
+                >
+                  <item.icon className="h-5 w-5 flex-shrink-0" strokeWidth={2} />
+                  {sidebarOpen && <span>{item.label}</span>}
+                </Link>
+                
+                {/* Materiality sub-link under Emissions */}
+                {isEmissionsItem && sidebarOpen && (isEmissionsPath || isMaterialityPath) && (
+                  <Link
+                    to="/dashboard/esg/materiality"
+                    className={clsx(
+                      'ml-8 mt-1 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                      isMaterialityPath
+                        ? 'bg-cd-mint/20 text-cd-midnight'
+                        : 'text-cd-muted hover:bg-cd-surface hover:text-cd-midnight'
+                    )}
+                  >
+                    <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                    </svg>
+                    <span>Materiality Assessment</span>
+                  </Link>
                 )}
-                title={!sidebarOpen ? item.label : undefined}
-              >
-                <item.icon className="h-5 w-5 flex-shrink-0" strokeWidth={2} />
-                {sidebarOpen && <span>{item.label}</span>}
-              </Link>
+              </div>
             )
           })}
         </nav>
@@ -257,3 +284,4 @@ export default function DashboardLayout() {
   )
 }
 
+ 
