@@ -5,12 +5,14 @@ import { Link } from 'react-router-dom';
 import { 
   ArrowLeft, Save, Download, CheckCircle2, Circle, FileText,
   Lightbulb, BookOpen, Plus, Building2, TrendingUp, DollarSign,
-  PieChart, BarChart3, AlertTriangle, Shield
+  PieChart, BarChart3, AlertTriangle, Shield, Calculator
 } from '@atoms/Icon';
 import FrameworkProgressBar from '../../components/molecules/FrameworkProgressBar';
 import ESGDataEntryForm from '../../components/ESGDataEntryForm';
 import { apiClient } from '../../utils/api';
 import esgDataManager from '../../utils/esgDataManager';
+import { calculatePCAFFinancedEmissions } from '../../utils/emissionsCalculator';
+import { getEmissionFactor } from '../../utils/emissionFactors';
 
 /**
  * PCAF Data Collection Page
@@ -22,6 +24,17 @@ const PCAFDataCollection = () => {
   const [activeSection, setActiveSection] = useState('portfolio');
   const [viewMode, setViewMode] = useState('list');
   const [showNewEntryForm, setShowNewEntryForm] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [calculatorInputs, setCalculatorInputs] = useState({
+    counterpartyEmissionsTonnes: '',
+    counterpartyRevenueMillion: '',
+    counterpartySector: 'manufacturing',
+    outstandingAmountUSD: '',
+    totalAssetOrEquityUSD: '',
+    buildingAreaM2: '',
+    dataQualitySource: 'sector-average',
+  });
+  const [calculationResult, setCalculationResult] = useState(null);
 
   // PCAF Asset Classes
   const assetClasses = [
@@ -174,6 +187,21 @@ const PCAFDataCollection = () => {
     link.click();
   };
 
+  const handleCalculate = () => {
+    const inputs = {
+      counterpartyEmissionsTonnes: parseFloat(calculatorInputs.counterpartyEmissionsTonnes) || 0,
+      counterpartyRevenueMillion: parseFloat(calculatorInputs.counterpartyRevenueMillion) || 0,
+      counterpartySector: calculatorInputs.counterpartySector,
+      outstandingAmountUSD: parseFloat(calculatorInputs.outstandingAmountUSD) || 0,
+      totalAssetOrEquityUSD: parseFloat(calculatorInputs.totalAssetOrEquityUSD) || 0,
+      buildingAreaM2: parseFloat(calculatorInputs.buildingAreaM2) || 0,
+      dataQualitySource: calculatorInputs.dataQualitySource,
+    };
+
+    const result = calculatePCAFFinancedEmissions(inputs);
+    setCalculationResult(result);
+  };
+
   const sections = {
     portfolio: { name: 'Portfolio Overview', icon: '📋', description: 'Overall portfolio characteristics' },
     emissions: { name: 'Financed Emissions', icon: '🏭', description: 'GHG emissions from loans and investments' },
@@ -210,6 +238,10 @@ const PCAFDataCollection = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setShowCalculator(true)}>
+            <Calculator className="mr-2 h-4 w-4" />
+            PCAF Calculator
+          </Button>
           <Button variant="outline" onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" />
             Export
@@ -431,6 +463,211 @@ const PCAFDataCollection = () => {
             setShowNewEntryForm(false);
           }}
         />
+      )}
+
+      {/* PCAF Financed Emissions Calculator Modal */}
+      {showCalculator && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white p-6">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-cd-midnight">PCAF Financed Emissions Calculator</h2>
+                <p className="text-sm text-cd-muted">Calculate financed emissions using DEFRA 2025 & PCAF emission factors</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowCalculator(false);
+                  setCalculationResult(null);
+                }}
+                className="rounded-lg p-2 text-cd-muted hover:bg-cd-surface"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Input Section */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-cd-midnight">Portfolio Details</h3>
+                
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-cd-midnight">
+                    Outstanding Amount (USD)
+                  </label>
+                  <input
+                    type="number"
+                    value={calculatorInputs.outstandingAmountUSD}
+                    onChange={(e) => setCalculatorInputs({...calculatorInputs, outstandingAmountUSD: e.target.value})}
+                    placeholder="e.g., 5000000"
+                    className="w-full rounded-lg border border-cd-border px-3 py-2 text-sm focus:border-cd-midnight focus:outline-none focus:ring-2 focus:ring-cd-midnight/20"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-cd-midnight">
+                    Total Asset or Equity (USD)
+                  </label>
+                  <input
+                    type="number"
+                    value={calculatorInputs.totalAssetOrEquityUSD}
+                    onChange={(e) => setCalculatorInputs({...calculatorInputs, totalAssetOrEquityUSD: e.target.value})}
+                    placeholder="e.g., 50000000"
+                    className="w-full rounded-lg border border-cd-border px-3 py-2 text-sm focus:border-cd-midnight focus:outline-none focus:ring-2 focus:ring-cd-midnight/20"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-cd-midnight">
+                    Counterparty Sector
+                  </label>
+                  <select
+                    value={calculatorInputs.counterpartySector}
+                    onChange={(e) => setCalculatorInputs({...calculatorInputs, counterpartySector: e.target.value})}
+                    className="w-full rounded-lg border border-cd-border px-3 py-2 text-sm focus:border-cd-midnight focus:outline-none focus:ring-2 focus:ring-cd-midnight/20"
+                  >
+                    <option value="manufacturing">Manufacturing</option>
+                    <option value="oilGas">Oil & Gas</option>
+                    <option value="electricUtilities">Electric Utilities</option>
+                    <option value="technology">Technology</option>
+                    <option value="financialServices">Financial Services</option>
+                    <option value="realEstate">Real Estate</option>
+                    <option value="retail">Retail</option>
+                  </select>
+                </div>
+
+                <div className="rounded-lg border-t border-cd-border pt-4">
+                  <h4 className="mb-3 text-sm font-semibold text-cd-midnight">Data Quality Source</h4>
+                  
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-cd-midnight">
+                      Counterparty Reported Emissions (tCO₂e) <span className="text-green-600">[DQ Score 1]</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={calculatorInputs.counterpartyEmissionsTonnes}
+                      onChange={(e) => setCalculatorInputs({...calculatorInputs, counterpartyEmissionsTonnes: e.target.value, dataQualitySource: 'reported'})}
+                      placeholder="If available (highest quality)"
+                      className="w-full rounded-lg border border-cd-border px-3 py-2 text-sm focus:border-cd-midnight focus:outline-none focus:ring-2 focus:ring-cd-midnight/20"
+                    />
+                  </div>
+
+                  <div className="mt-3 text-center text-xs text-cd-muted">OR (if emissions not reported)</div>
+
+                  <div className="mt-3">
+                    <label className="mb-1 block text-sm font-medium text-cd-midnight">
+                      Counterparty Revenue (USD Million) <span className="text-orange-600">[DQ Score 4]</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={calculatorInputs.counterpartyRevenueMillion}
+                      onChange={(e) => setCalculatorInputs({...calculatorInputs, counterpartyRevenueMillion: e.target.value, dataQualitySource: 'sector-average'})}
+                      placeholder="For sector-based estimation"
+                      className="w-full rounded-lg border border-cd-border px-3 py-2 text-sm focus:border-cd-midnight focus:outline-none focus:ring-2 focus:ring-cd-midnight/20"
+                    />
+                  </div>
+
+                  <div className="mt-3 text-center text-xs text-cd-muted">OR (for real estate)</div>
+
+                  <div className="mt-3">
+                    <label className="mb-1 block text-sm font-medium text-cd-midnight">
+                      Building Area (m²) <span className="text-yellow-600">[DQ Score 3]</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={calculatorInputs.buildingAreaM2}
+                      onChange={(e) => setCalculatorInputs({...calculatorInputs, buildingAreaM2: e.target.value, dataQualitySource: 'economic-activity'})}
+                      placeholder="For commercial real estate"
+                      className="w-full rounded-lg border border-cd-border px-3 py-2 text-sm focus:border-cd-midnight focus:outline-none focus:ring-2 focus:ring-cd-midnight/20"
+                    />
+                  </div>
+                </div>
+
+                <Button onClick={handleCalculate} className="w-full">
+                  <Calculator className="mr-2 h-4 w-4" />
+                  Calculate Financed Emissions
+                </Button>
+              </div>
+
+              {/* Results Section */}
+              <div>
+                <h3 className="mb-4 font-semibold text-cd-midnight">Calculation Results</h3>
+                
+                {calculationResult ? (
+                  <div className="space-y-4">
+                    <div className="rounded-lg border-2 border-cd-mint bg-cd-mint/10 p-4">
+                      <div className="text-sm text-cd-muted">Financed Emissions</div>
+                      <div className="text-3xl font-bold text-cd-midnight">
+                        {calculationResult.totalTonnesCO2e.toFixed(2)} <span className="text-lg">tCO₂e</span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className={`rounded px-2 py-0.5 text-xs font-medium text-white ${
+                          calculationResult.dataQualityScore === 1 ? 'bg-green-500' :
+                          calculationResult.dataQualityScore === 2 ? 'bg-lime-500' :
+                          calculationResult.dataQualityScore === 3 ? 'bg-yellow-500' :
+                          calculationResult.dataQualityScore === 4 ? 'bg-orange-500' :
+                          'bg-red-500'
+                        }`}>
+                          DQ Score: {calculationResult.dataQualityScore}
+                        </span>
+                        <span className="text-xs text-cd-muted">{calculationResult.methodology}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 rounded-lg bg-cd-surface p-4 text-sm">
+                      <div>
+                        <div className="text-xs text-cd-muted">Attribution Factor</div>
+                        <div className="font-semibold text-cd-midnight">{calculationResult.attributionFactor.toFixed(2)}%</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-cd-muted">Counterparty Emissions</div>
+                        <div className="font-semibold text-cd-midnight">{calculationResult.counterpartyEmissionsTonnes.toFixed(2)} tCO₂e</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-cd-muted">Portfolio Carbon Intensity</div>
+                        <div className="font-semibold text-cd-midnight">{calculationResult.portfolioCarbonIntensity.toFixed(2)} tCO₂e/$M</div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-xs">
+                      <div className="mb-2 font-semibold text-blue-900">Calculation Steps:</div>
+                      <div className="space-y-1 text-blue-800">
+                        <div>1. {calculationResult.calculation.counterpartyEmissions}</div>
+                        <div>2. Attribution: {calculationResult.calculation.attribution}</div>
+                        <div className="font-semibold">3. Result: {calculationResult.calculation.result}</div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-cd-mint bg-white p-3 text-xs">
+                      <div className="mb-1 font-semibold text-cd-midnight">Emission Factor Source:</div>
+                      <div className="text-cd-muted">
+                        {calculationResult.dataQualityScore === 1 && 'Reported data from counterparty (DEFRA 2025)'}
+                        {calculationResult.dataQualityScore === 3 && 'Building area-based using CIBSE TM46 / DEFRA 2025'}
+                        {calculationResult.dataQualityScore === 4 && 'Sector average intensity from PCAF Database 2025'}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-cd-border">
+                    <div className="text-center text-cd-muted">
+                      <Calculator className="mx-auto mb-2 h-12 w-12 opacity-30" />
+                      <p>Enter portfolio details and click calculate</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-lg bg-cd-mint/10 p-4 text-sm">
+              <div className="mb-2 font-semibold text-cd-midnight">💡 Using DEFRA 2025 Emission Factors:</div>
+              <ul className="space-y-1 text-cd-muted">
+                <li>• Sector intensities from PCAF Global Database 2025 (DQ Score 4)</li>
+                <li>• Building emissions from CIBSE TM46 benchmarks with DEFRA factors (DQ Score 3)</li>
+                <li>• Reported emissions validated against DEFRA 2025 methodology (DQ Score 1)</li>
+                <li>• All factors updated annually by UK Government and PCAF partnership</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
