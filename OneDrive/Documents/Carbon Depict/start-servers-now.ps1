@@ -35,3 +35,5 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Give the servers 10-15 seconds to start up..." -ForegroundColor Yellow
 
+
+

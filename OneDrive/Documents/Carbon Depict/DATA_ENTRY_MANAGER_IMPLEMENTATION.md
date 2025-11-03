@@ -224,3 +224,5 @@ The DataEntryManager component is now fully integrated into Scope 1, 2, and 3 fo
 
 This makes the data collection process much more user-friendly and reduces duplicate data entry.
 
+
+

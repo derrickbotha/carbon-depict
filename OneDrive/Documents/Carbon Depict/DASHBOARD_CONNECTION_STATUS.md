@@ -151,3 +151,5 @@ The dashboard **automatically refreshes** data:
 
 **The dashboard IS connected to the database and WILL display real data once it's entered through the forms.** The "0" values you're seeing are correct - they indicate that no data has been submitted yet.
 
+
+

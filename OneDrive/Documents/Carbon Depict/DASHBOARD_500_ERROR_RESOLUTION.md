@@ -87,3 +87,5 @@ To debug the 500 error:
 4. Verify user authentication is working
 5. Check MongoDB connection
 
+
+

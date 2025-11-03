@@ -24,7 +24,15 @@ export default function LoginPage() {
     setError(null)
 
     // Client-side validation
+    console.log('🔍 Validating form data:', {
+      email: formData.email,
+      emailLength: formData.email?.length,
+      emailTrimmed: formData.email?.trim(),
+      passwordLength: formData.password?.length
+    })
+    
     if (!formData.email || !formData.email.trim()) {
+      console.log('❌ Email validation failed: email is empty or whitespace')
       setError('Please enter your email address')
       setLoading(false)
       return
@@ -67,7 +75,13 @@ export default function LoginPage() {
   }
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    console.log('📝 Input changed:', { name, value, valueLength: value.length })
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value }
+      console.log('📋 Updated formData:', updated)
+      return updated
+    })
   }
 
   return (
@@ -104,7 +118,8 @@ export default function LoginPage() {
               label="Email address"
               type="email"
               name="email"
-              value={formData.email}
+              id="login-email"
+              value={formData.email || ''}
               onChange={handleChange}
               placeholder="you@company.com"
               required
@@ -116,7 +131,8 @@ export default function LoginPage() {
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
                 name="password"
-                value={formData.password}
+                id="login-password"
+                value={formData.password || ''}
                 onChange={handleChange}
                 placeholder="••••••••"
                 required
