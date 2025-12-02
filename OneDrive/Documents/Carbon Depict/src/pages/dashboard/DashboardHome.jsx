@@ -1,529 +1,318 @@
-import { useState, useEffect } from 'react'
-// Force cache invalidation 2025-10-23
-import { Link } from 'react-router-dom'
-import MetricCard from '@molecules/MetricCard'
-import DateFilter from '@molecules/DateFilter'
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Activity, 
-  Calendar,
-  Target,
-  AlertCircle,
-  CheckCircle,
-  Leaf,
-  Users,
-  Shield,
-  ArrowRight,
-  Award,
-  Zap,
-  Globe
-} from '@atoms/Icon'
-import { useDashboardData, useEmissionsAnalytics, useESGAnalytics, useComplianceAnalytics } from '../../hooks/useEnterpriseData'
+// Cache bust 2025-11-05
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  TrendingUp, TrendingDown, Activity, Calendar, Target, AlertCircle, CheckCircle,
+  Leaf, Users, Shield, ArrowRight, Award, Zap, Globe, FileText, Clock, ChevronRight
+} from 'lucide-react';
+import SkeletonLoader from '@components/atoms/SkeletonLoader';
+import EmptyState from '@components/molecules/EmptyState';
 
-/**
- * Executive Summary Dashboard
- * High-level overview of ESG and emissions performance against targets
- * Following EU standards (CSRD/ESRS) and global best practices (GRI, TCFD, SBTi)
- */
-export default function DashboardHome() {
-  // Date filter state
-  const [dateRange, setDateRange] = useState({
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
-    endDate: new Date()
-  })
+// --- MOCK DATA & HOOK ---
+const useExecutiveSummaryData = () => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Convert date range to API parameters
-  const apiParams = {
-    startDate: dateRange.startDate?.toISOString().split('T')[0],
-    endDate: dateRange.endDate?.toISOString().split('T')[0]
-  }
-
-  // Only use API params if we have valid dates
-  const validApiParams = (apiParams.startDate && apiParams.endDate) ? apiParams : {}
-
-  // Load live data from API with date filtering
-  const { data: dashboardData, loading: dashboardLoading, error: dashboardError, refetch: refetchDashboard } = useDashboardData(validApiParams)
-  const { data: emissionsData, loading: emissionsLoading, refetch: refetchEmissions } = useEmissionsAnalytics(validApiParams)
-  const { data: esgData, loading: esgLoading, refetch: refetchESG } = useESGAnalytics(validApiParams)
-  const { data: complianceData, loading: complianceLoading, refetch: refetchCompliance } = useComplianceAnalytics(validApiParams)
-  
-  // Real-time updates every 30 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      refetchDashboard()
-      refetchEmissions()
-      refetchESG()
-      refetchCompliance()
-    }, 30000) // Every 30 seconds
-    
-    return () => clearInterval(interval)
-  }, [refetchDashboard, refetchEmissions, refetchESG, refetchCompliance])
+    const timer = setTimeout(() => {
+      setData({
+        scores: { environmental: 76, social: 82, governance: 88 },
+        criticalActions: [
+          { id: 1, title: 'CSRD Reporting Deadline Approaching', description: 'First report for FY2025 is due Jan 2026.', priority: 'critical', daysRemaining: 73, action: 'Complete ESRS Data', link: '/dashboard/esg/csrd' },
+          { id: 2, title: 'Scope 3 Emissions Above Trend', description: 'Category 1 (Purchased Goods) emissions increased 3.4% MoM.', priority: 'high', impact: 'May affect SBTi target achievement.', action: 'Review Supplier Engagement', link: '/dashboard/emissions/scope3' },
+        ],
+        emissionsPerformance: { current: { scope1: 498.2, scope2: 374.8, scope3: 374.5, total: 1247.5 }, baseline: { year: 2019, total: 1850.0 }, targets: { nearTerm2030: { progress: 67.4 }, netZero2050: { progress: 32.6 } }, yearOverYear: { change: -12.5 } },
+        euCompliance: { taxonomy: { eligible: 78, aligned: 45 }, csrd: { progress: 65 } },
+        frameworksStatus: [
+          { id: 'csrd', name: 'CSRD/ESRS', description: 'EU Corporate Sustainability Reporting Directive', progress: 65, status: 'on-track' },
+          { id: 'taxonomy', name: 'EU Taxonomy', description: 'Sustainable Activities Classification', progress: 78, status: 'compliant' },
+          { id: 'sbti', name: 'SBTi Targets', description: 'Science-Based Targets (1.5°C pathway)', progress: 67, status: 'on-track' },
+          { id: 'gri', name: 'GRI Standards', description: 'Global Reporting Initiative 2021', progress: 90, status: 'compliant' },
+        ],
+        recentActivities: [
+          { id: 1, action: 'CSRD data for ESRS E1 updated', category: 'Compliance', date: '2h ago', status: 'info' },
+          { id: 2, action: 'SBTi validation submitted for near-term targets', category: 'Climate Action', date: '5h ago', status: 'success' },
+          { id: 3, action: 'New water consumption data added for Q3', category: 'Data Entry', date: '1d ago', status: 'info' },
+        ],
+      });
+      setLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
-  // Calculate scores from real data
-  const scores = {
-    environmental: esgData?.environmental?.score || 0,
-    social: esgData?.social?.score || 0,
-    governance: esgData?.governance?.score || 0,
-    overall: esgData?.overall?.score || 0,
-    frameworks: {
-      gri: esgData?.frameworks?.gri?.score || 0,
-      tcfd: esgData?.frameworks?.tcfd?.score || 0,
-      sbti: esgData?.frameworks?.sbti?.score || 0,
-      csrd: esgData?.frameworks?.csrd?.score || 0,
-      cdp: esgData?.frameworks?.cdp?.score || 0,
-      sdg: esgData?.frameworks?.sdg?.score || 0
-    }
-  }
-  
-  // EU Taxonomy Alignment & CSRD Compliance
-  const euCompliance = {
-    taxonomy: {
-      eligible: complianceData?.taxonomy?.eligible || 0,
-      aligned: complianceData?.taxonomy?.aligned || 0,
-      status: complianceData?.taxonomy?.status || 'pending',
-    },
-    csrd: {
-      progress: complianceData?.csrd?.progress || 0,
-      status: complianceData?.csrd?.status || 'pending',
-    },
-    esrs: {
-      environmental: scores.environmental,
-      social: scores.social,
-      governance: scores.governance,
-    }
-  }
+  return { ...data, loading };
+};
 
-  // Emissions Performance vs Science-Based Targets (SBTi)
-  const emissionsPerformance = {
-    current: {
-      scope1: emissionsData?.scopeSummary?.scope1?.total || 0,
-      scope2: emissionsData?.scopeSummary?.scope2?.total || 0,
-      scope3: emissionsData?.scopeSummary?.scope3?.total || 0,
-      total: emissionsData?.totalEmissions || 0,
-    },
-    targets: {
-      scope1: dashboardData?.targets?.scope1 || 0,
-      scope2: dashboardData?.targets?.scope2 || 0,
-      scope3: dashboardData?.targets?.scope3 || 0,
-      total: dashboardData?.targets?.total || 0,
-    },
-    trends: {
-      scope1: emissionsData?.scopeSummary?.scope1?.trend || 'stable',
-      scope2: emissionsData?.scopeSummary?.scope2?.trend || 'stable',
-      scope3: emissionsData?.scopeSummary?.scope3?.trend || 'stable',
-      total: emissionsData?.totalEmissions?.trend || 'stable',
-    },
-    sbti: {
-      status: dashboardData?.sbti?.status || 'pending',
-      progress: dashboardData?.sbti?.progress || 0,
-      targetYear: dashboardData?.sbti?.targetYear || 2030,
-    }
-  }
+// --- SUB-COMPONENTS ---
 
-  // ESG Performance Summary (EU ESRS Framework)
-  const esgPerformance = {
-    environmental: {
-      score: Math.round(scores.environmental),
-      target: 85,
-      status: scores.environmental >= 70 ? 'excellent' : scores.environmental >= 50 ? 'good' : 'needs-improvement',
-      metrics: esgData?.environmental?.metrics || [
-        { label: 'GHG Emissions Reduction', value: 0, target: 50, unit: '%' },
-        { label: 'Renewable Energy', value: 0, target: 100, unit: '%' },
-        { label: 'Circular Economy', value: 0, target: 60, unit: '%' },
-        { label: 'Biodiversity Impact', value: 'Pending', target: 'No Net Loss', status: 'pending' },
-      ]
-    },
-    social: {
-      score: Math.round(scores.social),
-      target: 80,
-      status: scores.social >= 70 ? 'excellent' : scores.social >= 50 ? 'good' : 'needs-improvement',
-      metrics: esgData?.social?.metrics || [
-        { label: 'Employee Satisfaction', value: 0, target: 85, unit: '%' },
-        { label: 'Diversity & Inclusion', value: 0, target: 40, unit: '%' },
-        { label: 'Health & Safety', value: 0, target: 0, unit: 'incidents', status: 'good' },
-        { label: 'Community Impact', value: 'Pending', target: 'Positive', status: 'pending' },
-      ]
-    },
-    governance: {
-      score: Math.round(scores.governance),
-      target: 90,
-      status: scores.governance >= 70 ? 'excellent' : scores.governance >= 50 ? 'good' : 'needs-improvement',
-      metrics: esgData?.governance?.metrics || [
-        { label: 'Board Diversity', value: 0, target: 50, unit: '%' },
-        { label: 'Ethics Compliance', value: 0, target: 100, unit: '%' },
-        { label: 'Risk Management', value: 'Pending', target: 'Comprehensive', status: 'pending' },
-        { label: 'Transparency', value: 0, target: 90, unit: '%' },
-      ]
-    }
-  }
-
-  // Framework Compliance Status
-  const frameworkCompliance = {
-    gri: {
-      score: Math.round(scores.frameworks.gri),
-      status: scores.frameworks.gri >= 70 ? 'compliant' : scores.frameworks.gri >= 50 ? 'partial' : 'non-compliant',
-      progress: scores.frameworks.gri,
-      requirements: esgData?.frameworks?.gri?.requirements || []
-    },
-    tcfd: {
-      score: Math.round(scores.frameworks.tcfd),
-      status: scores.frameworks.tcfd >= 70 ? 'compliant' : scores.frameworks.tcfd >= 50 ? 'partial' : 'non-compliant',
-      progress: scores.frameworks.tcfd,
-      requirements: esgData?.frameworks?.tcfd?.requirements || []
-    },
-    sbti: {
-      score: Math.round(scores.frameworks.sbti),
-      status: scores.frameworks.sbti >= 70 ? 'compliant' : scores.frameworks.sbti >= 50 ? 'partial' : 'non-compliant',
-      progress: scores.frameworks.sbti,
-      requirements: esgData?.frameworks?.sbti?.requirements || []
-    },
-    csrd: {
-      score: Math.round(scores.frameworks.csrd),
-      status: scores.frameworks.csrd >= 70 ? 'compliant' : scores.frameworks.csrd >= 50 ? 'partial' : 'non-compliant',
-      progress: scores.frameworks.csrd,
-      requirements: esgData?.frameworks?.csrd?.requirements || []
-    }
-  }
-
-  // Key Compliance Frameworks Status
-  const frameworksStatus = [
-    {
-      id: 'csrd',
-      name: 'CSRD/ESRS',
-      description: 'EU Corporate Sustainability Reporting Directive',
-      status: frameworkCompliance.csrd.status,
-      progress: frameworkCompliance.csrd.progress,
-      deadline: '2025',
-      priority: 'high'
-    },
-    {
-      id: 'gri',
-      name: 'GRI Standards',
-      description: 'Global Reporting Initiative',
-      status: frameworkCompliance.gri.status,
-      progress: frameworkCompliance.gri.progress,
-      deadline: 'Ongoing',
-      priority: 'high'
-    },
-    {
-      id: 'tcfd',
-      name: 'TCFD',
-      description: 'Task Force on Climate-related Financial Disclosures',
-      status: frameworkCompliance.tcfd.status,
-      progress: frameworkCompliance.tcfd.progress,
-      deadline: 'Ongoing',
-      priority: 'medium'
-    },
-    {
-      id: 'sbti',
-      name: 'SBTi',
-      description: 'Science Based Targets initiative',
-      status: frameworkCompliance.sbti.status,
-      progress: frameworkCompliance.sbti.progress,
-      deadline: '2030',
-      priority: 'high'
-    }
-  ]
-
-  // Loading state
-  const isLoading = dashboardLoading || emissionsLoading || esgLoading || complianceLoading
-
-  // Error handling
-  if (dashboardError) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Dashboard</h2>
-          <p className="text-gray-600 mb-4">{dashboardError.message || 'Failed to load dashboard data'}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-          >
-            Retry
-          </button>
-        </div>
+const Header = ({ loading }) => (
+  <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+    <div>
+      <h1 className="text-3xl font-bold text-greenly-midnight">Executive Summary</h1>
+      <p className="mt-1 text-lg text-greenly-slate">A top-level overview of your organization's ESG performance.</p>
+    </div>
+    {loading ? <SkeletonLoader className="h-12 w-48 rounded-lg" /> : (
+      <div className="text-right">
+        <div className="text-sm font-medium text-greenly-slate">Reporting Period</div>
+        <div className="font-semibold text-greenly-midnight text-lg">FY 2025 (YTD)</div>
       </div>
-    )
-  }
+    )}
+  </div>
+);
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Dashboard</h2>
-          <p className="text-gray-600">Fetching your ESG and emissions data...</p>
-        </div>
-      </div>
-    )
-  }
+const CriticalActions = ({ actions, loading }) => {
+  if (loading) return <SkeletonLoader className="h-48 w-full rounded-lg" />;
+  if (!actions || actions.length === 0) return null;
 
   return (
-    <div className="space-y-6">
-      {/* Executive Summary Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-green-600 rounded-lg p-6 text-white">
-        <div className="flex items-center justify-between">
+    <div className="bg-greenly-desert/20 border border-greenly-desert p-6 rounded-lg">
+      <div className="flex items-center gap-3 mb-4">
+        <AlertCircle className="h-6 w-6 text-greenly-warning" />
+        <h2 className="text-xl font-bold text-greenly-midnight">Action Required</h2>
+      </div>
+      <div className="space-y-4">
+        {actions.map((action) => (
+          <div key={action.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white p-4 rounded-md shadow-sm gap-4 border border-greenly-light">
+            <div className="flex-grow">
+              <div className="flex items-center gap-2">
+                <span className={`h-2.5 w-2.5 rounded-full ${action.priority === 'critical' ? 'bg-greenly-alert' : 'bg-greenly-warning'}`} />
+                <h3 className="font-semibold text-greenly-midnight">{action.title}</h3>
+                {action.daysRemaining && <span className="text-xs font-medium text-greenly-alert bg-red-50 px-2 py-0.5 rounded-full border border-red-100">{action.daysRemaining} days left</span>}
+              </div>
+              <p className="text-sm text-greenly-slate mt-1">{action.description}</p>
+            </div>
+            <Link to={action.link} className="flex items-center gap-2 px-4 py-2 bg-greenly-midnight text-white rounded-lg hover:bg-greenly-midnight/90 transition-colors text-sm font-medium">
+              {action.action} <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const EsgPillarCard = ({ pillar, score, icon: Icon, color, loading }) => {
+  if (loading) return <SkeletonLoader className="h-48 w-full rounded-lg" />;
+
+  const statusColor = score >= 85 ? 'text-greenly-success' : score >= 70 ? 'text-greenly-info' : 'text-greenly-warning';
+  const progressColor = score >= 85 ? 'bg-greenly-success' : score >= 70 ? 'bg-greenly-info' : 'bg-greenly-warning';
+
+  // Map old color names to new palette
+  const iconBgColor = color === 'primary' ? 'bg-greenly-mint/30' : color === 'blue' ? 'bg-greenly-info/10' : 'bg-greenly-cedar/10';
+  const iconColor = color === 'primary' ? 'text-greenly-midnight' : color === 'blue' ? 'text-greenly-info' : 'text-greenly-cedar';
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-greenly-light hover:shadow-md hover:border-greenly-teal transition-all">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`${iconBgColor} p-3 rounded-full`}>
+            <Icon className={`h-6 w-6 ${iconColor}`} />
+          </div>
+          <h3 className="text-xl font-bold text-greenly-midnight">{pillar}</h3>
+        </div>
+        <div className={`text-2xl font-bold ${statusColor}`}>{score}<span className="text-base text-greenly-slate">/100</span></div>
+      </div>
+      <div className="w-full bg-greenly-light rounded-full h-2 mb-4">
+        <div className={`${progressColor} h-2 rounded-full`} style={{ width: `${score}%` }}></div>
+      </div>
+      <Link to={`/dashboard/esg/${pillar.toLowerCase()}`} className="flex items-center justify-end gap-2 text-sm font-semibold text-greenly-teal hover:underline">
+        View Details <ArrowRight className="h-4 w-4" />
+      </Link>
+    </div>
+  );
+};
+
+const ClimatePerformance = ({ data, loading }) => {
+  if (loading) return <SkeletonLoader className="h-96 w-full rounded-lg" />;
+  if (!data) return null;
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-greenly-light">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
         <div>
-            <h1 className="text-2xl font-bold mb-2">Executive ESG Dashboard</h1>
-            <p className="text-blue-100">
-              Comprehensive overview of your sustainability performance and compliance status
-          </p>
+          <h2 className="text-2xl font-bold text-greenly-midnight">Climate Performance vs. SBTi</h2>
+          <p className="text-sm text-greenly-slate mt-1">Aligned with SBTi 1.5°C pathway and Net-Zero Standard.</p>
         </div>
-        <div className="text-right">
-            <div className="text-3xl font-bold">{Math.round(scores.overall)}</div>
-            <div className="text-blue-100">Overall ESG Score</div>
-          </div>
-        </div>
-        
-        {/* Date Filter */}
-        <div className="mt-4 flex items-center justify-between">
-          <div className="text-blue-100 text-sm">
-            Showing data from {dateRange.startDate?.toLocaleDateString() || 'N/A'} to {dateRange.endDate?.toLocaleDateString() || 'N/A'}
-          </div>
-          <DateFilter 
-            onDateRangeChange={setDateRange}
-            className="bg-white/10 backdrop-blur-sm"
-          />
-        </div>
+        <Link to="/dashboard/emissions" className="flex items-center gap-2 px-4 py-2 border border-greenly-light rounded-lg hover:bg-greenly-off-white transition-colors text-sm font-medium text-greenly-midnight">
+          Emissions Dashboard <ArrowRight className="h-4 w-4" />
+        </Link>
       </div>
-
-      {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Emissions Performance */}
-        <MetricCard
-          title="Total Emissions"
-          value={`${emissionsPerformance.current.total.toFixed(1)} tCO₂e`}
-          change={emissionsPerformance.trends.total === 'decreasing' ? -12.5 : 0}
-          trend={emissionsPerformance.trends.total}
-          icon={Leaf}
-          color="green"
-        />
-
-        {/* ESG Score */}
-        <MetricCard
-          title="ESG Score"
-          value={`${Math.round(scores.overall)}/100`}
-          change={scores.overall >= 70 ? 5.2 : 0}
-          trend={scores.overall >= 70 ? 'increasing' : 'stable'}
-          icon={Award}
-          color="blue"
-        />
-
-        {/* Compliance Status */}
-        <MetricCard
-          title="CSRD Compliance"
-          value={`${frameworkCompliance.csrd.progress}%`}
-          change={frameworkCompliance.csrd.progress >= 70 ? 15.3 : 0}
-          trend={frameworkCompliance.csrd.status === 'compliant' ? 'increasing' : 'stable'}
-          icon={Shield}
-          color="purple"
-        />
-
-        {/* SBTi Progress */}
-        <MetricCard
-          title="SBTi Progress"
-          value={`${emissionsPerformance.sbti.progress}%`}
-          change={emissionsPerformance.sbti.progress >= 50 ? 8.7 : 0}
-          trend={emissionsPerformance.sbti.status === 'on-track' ? 'increasing' : 'stable'}
-          icon={Target}
-          color="orange"
-            />
-          </div>
-
-      {/* ESG Performance Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Environmental */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Environmental</h3>
-            <Leaf className="h-6 w-6 text-green-600" />
-              </div>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Score</span>
-              <span className="font-semibold">{esgPerformance.environmental.score}/100</span>
-          </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-green-600 h-2 rounded-full" 
-                style={{ width: `${esgPerformance.environmental.score}%` }}
-              ></div>
-          </div>
-            <div className="text-sm text-gray-600">
-              Status: <span className={`font-medium ${
-                esgPerformance.environmental.status === 'excellent' ? 'text-green-600' :
-                esgPerformance.environmental.status === 'good' ? 'text-blue-600' : 'text-orange-600'
-              }`}>
-                {esgPerformance.environmental.status}
-                </span>
-              </div>
-        </div>
-      </div>
-
-        {/* Social */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Social</h3>
-            <Users className="h-6 w-6 text-blue-600" />
-            </div>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Score</span>
-              <span className="font-semibold">{esgPerformance.social.score}/100</span>
-          </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-blue-600 h-2 rounded-full" 
-                style={{ width: `${esgPerformance.social.score}%` }}
-              ></div>
-        </div>
-            <div className="text-sm text-gray-600">
-              Status: <span className={`font-medium ${
-                esgPerformance.social.status === 'excellent' ? 'text-green-600' :
-                esgPerformance.social.status === 'good' ? 'text-blue-600' : 'text-orange-600'
-              }`}>
-                {esgPerformance.social.status}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-        {/* Governance */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Governance</h3>
-            <Shield className="h-6 w-6 text-purple-600" />
-                  </div>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Score</span>
-              <span className="font-semibold">{esgPerformance.governance.score}/100</span>
-                  </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-purple-600 h-2 rounded-full" 
-                style={{ width: `${esgPerformance.governance.score}%` }}
-              ></div>
-                  </div>
-            <div className="text-sm text-gray-600">
-              Status: <span className={`font-medium ${
-                esgPerformance.governance.status === 'excellent' ? 'text-green-600' :
-                esgPerformance.governance.status === 'good' ? 'text-blue-600' : 'text-orange-600'
-              }`}>
-                {esgPerformance.governance.status}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Framework Compliance Status */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Framework Compliance Status</h3>
-          <p className="text-sm text-gray-600 mt-1">Track your progress across key ESG frameworks</p>
-          </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {frameworksStatus.map((framework) => (
-              <div key={framework.id} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-gray-900">{framework.name}</h4>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    framework.status === 'compliant' ? 'bg-green-100 text-green-800' :
-                    framework.status === 'partial' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {framework.status}
-                </span>
-              </div>
-                <p className="text-sm text-gray-600 mb-3">{framework.description}</p>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Progress</span>
-                    <span>{framework.progress}%</span>
-                </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full ${
-                        framework.status === 'compliant' ? 'bg-green-600' :
-                        framework.status === 'partial' ? 'bg-yellow-600' : 'bg-red-600'
-                      }`}
-                      style={{ width: `${framework.progress}%` }}
-                    ></div>
-              </div>
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>Deadline: {framework.deadline}</span>
-                    <span className={`${
-                      framework.priority === 'high' ? 'text-red-600' :
-                      framework.priority === 'medium' ? 'text-yellow-600' : 'text-green-600'
-                    }`}>
-                      {framework.priority} priority
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link 
-            to="/dashboard/emissions" 
-            className="flex items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Leaf className="h-6 w-6 text-green-600 mr-3" />
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="bg-greenly-off-white p-4 rounded-md border border-greenly-light">
+          <h3 className="font-semibold text-greenly-midnight mb-3">Current Performance (YTD)</h3>
+          <div className="flex items-center justify-between bg-white p-4 rounded-md shadow-sm border border-greenly-light">
             <div>
-              <div className="font-medium">Emissions Data</div>
-              <div className="text-sm text-gray-600">Manage GHG inventory</div>
+              <p className="text-sm text-greenly-slate">Total GHG Emissions</p>
+              <p className="text-3xl font-bold text-greenly-midnight">{data.current.total.toLocaleString()} <span className="text-base font-normal text-gray-500">tCO₂e</span></p>
+              <div className="flex items-center gap-1 text-sm text-greenly-success font-semibold mt-1">
+                <TrendingDown className="h-4 w-4" /> {Math.abs(data.yearOverYear.change)}% vs {data.baseline.year}
+              </div>
+            </div>
+            <div className="flex-shrink-0 h-16 w-16 rounded-full bg-greenly-mint/30 flex items-center justify-center">
+              <CheckCircle className="h-8 w-8 text-greenly-teal" />
+            </div>
+          </div>
         </div>
-            <ArrowRight className="h-4 w-4 text-gray-400 ml-auto" />
-          </Link>
-
-          <Link 
-            to="/dashboard/esg/frameworks" 
-            className="flex items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Award className="h-6 w-6 text-blue-600 mr-3" />
-            <div>
-              <div className="font-medium">ESG Frameworks</div>
-              <div className="text-sm text-gray-600">Framework compliance</div>
+        <div className="bg-greenly-off-white p-4 rounded-md space-y-4 border border-greenly-light">
+          <h3 className="font-semibold text-greenly-midnight">SBTi Target Progress</h3>
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <p className="font-semibold text-sm text-greenly-midnight">2030 Target (1.5°C)</p>
+              <p className="text-xs font-bold text-greenly-teal">On Track</p>
             </div>
-            <ArrowRight className="h-4 w-4 text-gray-400 ml-auto" />
-          </Link>
-
-          <Link 
-            to="/dashboard/reports" 
-            className="flex items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Globe className="h-6 w-6 text-purple-600 mr-3" />
-            <div>
-              <div className="font-medium">Reports</div>
-              <div className="text-sm text-gray-600">Generate reports</div>
+            <div className="w-full bg-greenly-light rounded-full h-2.5">
+              <div className="bg-greenly-teal h-2.5 rounded-full" style={{ width: `${data.targets.nearTerm2030.progress}%` }}></div>
             </div>
-            <ArrowRight className="h-4 w-4 text-gray-400 ml-auto" />
-          </Link>
-
-          <Link 
-            to="/dashboard/settings" 
-            className="flex items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Shield className="h-6 w-6 text-orange-600 mr-3" />
-                <div>
-              <div className="font-medium">Settings</div>
-              <div className="text-sm text-gray-600">Configure system</div>
-                </div>
-            <ArrowRight className="h-4 w-4 text-gray-400 ml-auto" />
-          </Link>
+            <p className="text-xs text-right mt-1 text-greenly-slate">{data.targets.nearTerm2030.progress}% achieved</p>
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <p className="font-semibold text-sm text-greenly-midnight">2050 Net-Zero Target</p>
+              <p className="text-xs font-bold text-greenly-info">On Track</p>
+            </div>
+            <div className="w-full bg-greenly-light rounded-full h-2.5">
+              <div className="bg-greenly-info h-2.5 rounded-full" style={{ width: `${data.targets.netZero2050.progress}%` }}></div>
+            </div>
+            <p className="text-xs text-right mt-1 text-greenly-slate">{data.targets.netZero2050.progress}% achieved</p>
+          </div>
         </div>
       </div>
     </div>
-  )
+  );
+};
+
+const ComplianceStatus = ({ frameworks, euCompliance, loading }) => {
+  if (loading) return <SkeletonLoader className="h-80 w-full rounded-lg" />;
+  if (!frameworks || !euCompliance) return null;
+
+  const getStatusPill = (status) => {
+    switch (status) {
+      case 'compliant': return <span className="px-2 py-1 rounded-full text-xs font-semibold bg-greenly-mint/50 text-greenly-midnight border border-greenly-mint">Compliant</span>;
+      case 'on-track': return <span className="px-2 py-1 rounded-full text-xs font-semibold bg-greenly-desert/50 text-greenly-warning border border-greenly-desert">On Track</span>;
+      default: return <span className="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-greenly-alert border border-red-200">Action Needed</span>;
+    }
+  };
+
+  return (
+    <div className="grid lg:grid-cols-2 gap-6">
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-greenly-light">
+        <div className="flex items-center gap-3 mb-4">
+          <Globe className="h-6 w-6 text-greenly-info" />
+          <h2 className="text-xl font-bold text-greenly-midnight">EU Compliance</h2>
+        </div>
+        <div className="space-y-4">
+          <div className="bg-greenly-info/10 p-4 rounded-md border border-greenly-info/20">
+            <h3 className="font-semibold text-greenly-midnight mb-2">EU Taxonomy Alignment</h3>
+            <div className="flex justify-around text-center">
+              <div>
+                <p className="text-3xl font-bold text-greenly-info">{euCompliance.taxonomy.eligible}%</p>
+                <p className="text-sm text-greenly-slate">Eligible</p>
+              </div>
+              <div>
+                <p className="text-3xl font-bold text-greenly-teal">{euCompliance.taxonomy.aligned}%</p>
+                <p className="text-sm text-greenly-slate">Aligned</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-greenly-cedar/10 p-4 rounded-md border border-greenly-cedar/20">
+            <h3 className="font-semibold text-greenly-midnight mb-2">CSRD Readiness</h3>
+            <div className="w-full bg-greenly-light rounded-full h-2.5">
+              <div className="bg-greenly-cedar h-2.5 rounded-full" style={{ width: `${euCompliance.csrd.progress}%` }}></div>
+            </div>
+            <p className="text-xs text-right mt-1 text-greenly-slate">{euCompliance.csrd.progress}% complete</p>
+          </div>
+        </div>
+      </div>
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-greenly-light">
+        <div className="flex items-center gap-3 mb-4">
+          <FileText className="h-6 w-6 text-greenly-midnight" />
+          <h2 className="text-xl font-bold text-greenly-midnight">Frameworks Status</h2>
+        </div>
+        <div className="space-y-3">
+          {frameworks.map(fw => (
+            <div key={fw.id} className="flex items-center justify-between p-3 rounded-md hover:bg-greenly-off-white border border-transparent hover:border-greenly-light transition-colors">
+              <div>
+                <p className="font-semibold text-greenly-midnight">{fw.name}</p>
+                <p className="text-xs text-greenly-slate">{fw.description}</p>
+              </div>
+              {getStatusPill(fw.status)}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RecentActivity = ({ activities, loading }) => {
+  if (loading) return <SkeletonLoader className="h-48 w-full rounded-lg" />;
+  if (!activities) return null;
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-greenly-light">
+      <div className="flex items-center gap-3 mb-4">
+        <Clock className="h-6 w-6 text-greenly-midnight" />
+        <h2 className="text-xl font-bold text-greenly-midnight">Recent Activity</h2>
+      </div>
+      <ul className="space-y-3">
+        {activities.map(act => (
+          <li key={act.id} className="flex items-center justify-between pb-3 border-b border-greenly-light last:border-b-0">
+            <div className="flex items-center gap-3">
+              <div className={`h-2.5 w-2.5 rounded-full ${act.status === 'success' ? 'bg-greenly-success' : 'bg-greenly-info'}`}></div>
+              <div>
+                <p className="font-medium text-greenly-midnight">{act.action}</p>
+                <p className="text-sm text-greenly-slate">{act.category}</p>
+              </div>
+            </div>
+            <p className="text-sm text-greenly-slate">{act.date}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+// --- MAIN COMPONENT ---
+export default function DashboardHome() {
+  const { loading, scores, criticalActions, emissionsPerformance, euCompliance, frameworksStatus, recentActivities } = useExecutiveSummaryData();
+
+  if (loading) {
+    return (
+      <div className="p-6 bg-greenly-secondary min-h-screen animate-pulse">
+        <Header loading={true} />
+        <SkeletonLoader className="h-48 w-full mb-6 rounded-lg" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <SkeletonLoader className="h-48 w-full rounded-lg" />
+          <SkeletonLoader className="h-48 w-full rounded-lg" />
+          <SkeletonLoader className="h-48 w-full rounded-lg" />
+        </div>
+        <SkeletonLoader className="h-96 w-full mb-6 rounded-lg" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SkeletonLoader className="h-80 w-full rounded-lg" />
+          <SkeletonLoader className="h-80 w-full rounded-lg" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!scores) {
+    return <EmptyState title="Could not load summary data" message="There was an issue fetching the executive summary. Please try again later." />;
+  }
+
+  return (
+    <div className="p-4 sm:p-6 bg-greenly-secondary min-h-screen space-y-6">
+      <Header loading={loading} />
+      <CriticalActions actions={criticalActions} loading={loading} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <EsgPillarCard pillar="Environmental" score={scores.environmental} icon={Leaf} color="primary" loading={loading} />
+        <EsgPillarCard pillar="Social" score={scores.social} icon={Users} color="blue" loading={loading} />
+        <EsgPillarCard pillar="Governance" score={scores.governance} icon={Shield} color="purple" loading={loading} />
+      </div>
+
+      <ClimatePerformance data={emissionsPerformance} loading={loading} />
+      <ComplianceStatus frameworks={frameworksStatus} euCompliance={euCompliance} loading={loading} />
+      <RecentActivity activities={recentActivities} loading={loading} />
+    </div>
+  );
 }

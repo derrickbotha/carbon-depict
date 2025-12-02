@@ -1,4 +1,3 @@
-// Cache bust 2025-10-23
 import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -206,11 +205,11 @@ const HealthSafetyCollection = () => {
                 to="/dashboard/esg/data-entry"
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <ArrowLeft strokeWidth={2} />
+                <ArrowLeft className="w-5 h-5 text-gray-600" strokeWidth={2} />
               </Link>
               <div>
                 <div className="mb-1 flex items-center gap-2">
-                  <Shield strokeWidth={2} />
+                  <Shield className="h-6 w-6 text-orange-600" strokeWidth={2} />
                   <span className="text-sm font-semibold text-orange-600">HEALTH & SAFETY</span>
                 </div>
                 <h1 className="text-3xl font-bold text-cd-text">Health & Safety Data Collection</h1>
@@ -221,11 +220,11 @@ const HealthSafetyCollection = () => {
             </div>
             <div className="flex gap-2">
               <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                <Download strokeWidth={2} />
+                <Download className="w-4 h-4" strokeWidth={2} />
                 Export Data
               </button>
               <button className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 flex items-center gap-2">
-                <Save strokeWidth={2} />
+                <Save className="w-4 h-4" strokeWidth={2} />
                 Save Progress
               </button>
             </div>
@@ -306,7 +305,7 @@ const HealthSafetyCollection = () => {
                   </div>
                 </div>
                 <div className="mt-3 flex items-center gap-2 text-sm text-cd-muted">
-                  <Alert strokeWidth={2} />
+                  <AlertCircle className="h-4 w-4" strokeWidth={2} />
                   <span>Enter your organization's health and safety data for the reporting period</span>
                 </div>
               </div>
@@ -317,7 +316,7 @@ const HealthSafetyCollection = () => {
                   <div key={fieldKey} className="flex items-start gap-4">
                     <div className="flex-shrink-0 mt-2">
                       {field.completed ? (
-                        <Check strokeWidth={2} />
+                        <CheckCircle2 className="h-5 w-5 text-green-600" strokeWidth={2} />
                       ) : (
                         <Circle className="h-5 w-5 text-gray-300" strokeWidth={2} />
                       )}
@@ -555,7 +554,7 @@ const HealthSafetyCollection = () => {
               {currentCategory === 'incidents' && (
                 <div className="mt-6 rounded-lg border border-orange-200 bg-orange-50 p-4">
                   <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-orange-900">
-                    <Info strokeWidth={2} />
+                    <Info className="h-4 w-4" strokeWidth={2} />
                     Work-Related Injuries Guidance
                   </div>
                   <ul className="space-y-1 text-xs text-orange-800">
@@ -570,7 +569,7 @@ const HealthSafetyCollection = () => {
               {currentCategory === 'exposure' && (
                 <div className="mt-6 rounded-lg border border-orange-200 bg-orange-50 p-4">
                   <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-orange-900">
-                    <Info strokeWidth={2} />
+                    <Info className="h-4 w-4" strokeWidth={2} />
                     Hours Worked Guidance
                   </div>
                   <ul className="space-y-1 text-xs text-orange-800">
@@ -585,7 +584,7 @@ const HealthSafetyCollection = () => {
               {currentCategory === 'management' && (
                 <div className="mt-6 rounded-lg border border-orange-200 bg-orange-50 p-4">
                   <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-orange-900">
-                    <Info strokeWidth={2} />
+                    <Info className="h-4 w-4" strokeWidth={2} />
                     Safety Management System Guidance
                   </div>
                   <ul className="space-y-1 text-xs text-orange-800">
@@ -603,7 +602,7 @@ const HealthSafetyCollection = () => {
                   className="flex-1 rounded-lg bg-orange-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-orange-700 flex items-center justify-center gap-2"
                   onClick={() => alert('Data saved! (API integration pending)')}
                 >
-                  <Save strokeWidth={2} />
+                  <Save className="w-4 h-4" strokeWidth={2} />
                   Save Progress
                 </button>
                 <button
@@ -623,4 +622,3 @@ const HealthSafetyCollection = () => {
 };
 
 export default HealthSafetyCollection;
-

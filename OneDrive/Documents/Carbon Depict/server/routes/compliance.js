@@ -425,7 +425,7 @@ router.put('/metrics/:id/publish', authenticate, async (req, res) => {
 router.get('/stats', authenticate, async (req, res) => {
   try {
     const stats = await ESGMetric.aggregate([
-      { $match: { companyId: new mongoose.Types.ObjectId(req.user.companyId) } },
+      { $match: { companyId: mongoose.Types.ObjectId(req.user.companyId) } },
       {
         $group: {
           _id: { framework: '$framework', status: '$status', complianceStatus: '$complianceStatus' },

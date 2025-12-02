@@ -1,625 +1,195 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { 
-  FileText, 
-  CheckCircle, 
-  AlertCircle, 
-  Clock, 
-  TrendingUp, 
-  Download,
-  ExternalLink,
-  BookOpen,
-  Award,
-  Target,
-  Leaf,
-  Building2,
-  Globe2,
-  ArrowRight,
-  Check,
-  DollarSign
-} from '@atoms/Icon'
-import esgDataManager from '../../utils/esgDataManager'
+import {
+  FileText, CheckCircle, Clock, TrendingUp, Download, ExternalLink, BookOpen,
+  Award, Target, Leaf, Building2, Globe, ArrowRight, Check, DollarSign, Info
+} from 'lucide-react'
+import SkeletonLoader from '@components/atoms/SkeletonLoader'
+import EmptyState from '@components/molecules/EmptyState'
 
-const ESGFrameworksPage = () => {
-  const [frameworkData, setFrameworkData] = useState({
-    gri: { progress: 0, score: 0, completedFields: 0, totalFields: 0 },
-    tcfd: { progress: 0, score: 0, completedFields: 0, totalFields: 0 },
-    sbti: { progress: 0, score: 0, completedFields: 0, totalFields: 0 },
-    csrd: { progress: 0, score: 0, completedFields: 0, totalFields: 0 },
-    cdp: { progress: 0, score: 0, completedFields: 0, totalFields: 0 },
-    sdg: { progress: 0, score: 0, completedFields: 0, totalFields: 0 },
-    sasb: { progress: 0, score: 0, completedFields: 0, totalFields: 0 },
-    issb: { progress: 0, score: 0, completedFields: 0, totalFields: 0 },
-    pcaf: { progress: 0, score: 0, completedFields: 0, totalFields: 0 }
-  })
+// --- MOCK DATA & HOOK ---
+const useFrameworksData = () => {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadFrameworkData()
+    const timer = setTimeout(() => {
+      setData({
+        gri: { progress: 92, score: 88, completedFields: 240, totalFields: 260 },
+        tcfd: { progress: 75, score: 80, completedFields: 9, totalFields: 11 },
+        sbti: { progress: 60, score: 75, completedFields: 3, totalFields: 5 },
+        csrd: { progress: 45, score: 65, completedFields: 500, totalFields: 1144 },
+        cdp: { progress: 85, score: 90, completedFields: 150, totalFields: 175 },
+        sdg: { progress: 70, score: 78, completedFields: 12, totalFields: 17 },
+        sasb: { progress: 95, score: 92, completedFields: 25, totalFields: 26 },
+        issb: { progress: 55, score: 70, completedFields: 4, totalFields: 8 },
+        pcaf: { progress: 30, score: 50, completedFields: 2, totalFields: 7 }
+      })
+      setLoading(false)
+    }, 1500)
+    return () => clearTimeout(timer)
   }, [])
 
-  const loadFrameworkData = () => {
-    const scores = esgDataManager.getScores()
-    
-    // Get framework data to count fields
-    const getFieldCounts = (framework) => {
-      const data = esgDataManager.getFrameworkData(framework)
-      const totalFields = esgDataManager.countTotalFields(data)
-      const completedFields = esgDataManager.countCompletedFields(data)
-      return { totalFields, completedFields }
-    }
-    
-    setFrameworkData({
-      gri: { 
-        ...scores.frameworks.gri, 
-        ...getFieldCounts('gri') 
-      },
-      tcfd: { 
-        ...scores.frameworks.tcfd, 
-        ...getFieldCounts('tcfd') 
-      },
-      sbti: { 
-        ...scores.frameworks.sbti, 
-        ...getFieldCounts('sbti') 
-      },
-      csrd: { 
-        ...scores.frameworks.csrd, 
-        ...getFieldCounts('csrd') 
-      },
-      cdp: { 
-        ...scores.frameworks.cdp, 
-        ...getFieldCounts('cdp') 
-      },
-      sdg: { 
-        ...scores.frameworks.sdg, 
-        ...getFieldCounts('sdg') 
-      },
-      sasb: { 
-        ...scores.frameworks.sasb, 
-        ...getFieldCounts('sasb') 
-      },
-      issb: { 
-        ...scores.frameworks.issb, 
-        ...getFieldCounts('issb') 
-      },
-      pcaf: { 
-        ...scores.frameworks.pcaf, 
-        ...getFieldCounts('pcaf') 
-      }
-    })
+  const frameworks = useMemo(() => [
+    { id: 'gri', name: 'GRI Standards', fullName: 'Global Reporting Initiative', description: 'The world\'s most widely used sustainability reporting framework.', icon: Globe, color: 'blue', category: 'Universal', requirements: '25+ disclosure topics', certification: 'GRI Standards', adoptedBy: '10,000+ organizations', keyBenefits: ['Widely recognized globally', 'Comprehensive materiality', 'Stakeholder engagement'], mainTopics: ['Organizational Context', 'Material Topics', 'Environmental Impact', 'Social Responsibility'], link: '/dashboard/esg/gri' },
+    { id: 'tcfd', name: 'TCFD', fullName: 'Task Force on Climate-related Financial Disclosures', description: 'Framework for climate-related financial risk disclosures.', icon: TrendingUp, color: 'green', category: 'Climate', requirements: '11 recommended disclosures', certification: 'TCFD Supporter', adoptedBy: '3,900+ organizations', keyBenefits: ['Investor-focused', 'Climate risk assessment', 'Scenario analysis'], mainTopics: ['Governance', 'Strategy', 'Risk Management', 'Metrics & Targets'], link: '/dashboard/esg/tcfd' },
+    { id: 'sbti', name: 'SBTi Net-Zero', fullName: 'Science Based Targets initiative', description: 'Framework for setting emissions reduction targets aligned with climate science.', icon: Target, color: 'orange', category: 'Climate Action', requirements: 'Near & Long-term targets', certification: 'SBTi Validated', adoptedBy: '4,000+ companies', keyBenefits: ['1.5°C alignment', 'Net-zero pathway', 'Investor confidence'], mainTopics: ['Target Setting', 'Scope 1-3 Emissions', 'Reduction Pathways', 'Verification'], link: '/dashboard/esg/sbti' },
+    { id: 'csrd', name: 'CSRD/ESRS', fullName: 'Corporate Sustainability Reporting Directive', description: 'EU mandatory sustainability reporting directive using ESRS standards.', icon: Building2, color: 'purple', category: 'EU Regulation', requirements: 'Full ESRS standards', certification: 'CSRD Compliant', adoptedBy: '50,000+ EU companies', keyBenefits: ['EU market access', 'Legal compliance', 'Standardized reporting'], mainTopics: ['Double Materiality', 'ESRS Standards', 'Value Chain', 'Due Diligence'], link: '/dashboard/esg/csrd' },
+    { id: 'cdp', name: 'CDP Disclosure', fullName: 'Carbon Disclosure Project', description: 'Global environmental disclosure system for investors.', icon: Leaf, color: 'teal', category: 'Environmental', requirements: 'Annual questionnaire', certification: 'CDP A-List', adoptedBy: '18,700+ companies', keyBenefits: ['Investor transparency', 'Environmental leadership', 'Public scoring'], mainTopics: ['Climate Change', 'Water Security', 'Forests', 'Supply Chain'], link: '/dashboard/esg/cdp' },
+    { id: 'sasb', name: 'SASB Standards', fullName: 'Sustainability Accounting Standards Board', description: 'Industry-specific standards for financially material information.', icon: DollarSign, color: 'emerald', category: 'Financial Materiality', requirements: 'Industry-specific metrics', certification: 'SASB Aligned', adoptedBy: '2,000+ companies', keyBenefits: ['Investor-focused', 'Financial materiality', 'SEC filing integration'], mainTopics: ['Environment', 'Social Capital', 'Human Capital', 'Business Model'], link: '/dashboard/esg/sasb' },
+    { id: 'pcaf', name: 'PCAF', fullName: 'Partnership for Carbon Accounting Financials', description: 'Standard for measuring and disclosing financed emissions.', icon: Award, color: 'indigo', category: 'Finance', requirements: 'Financed emissions calculation', certification: 'PCAF Accredited', adoptedBy: '400+ financial institutions', keyBenefits: ['Standardized accounting', 'Portfolio alignment', 'Regulatory readiness'], mainTopics: ['Financed Emissions', 'Data Quality', 'Attribution Factors', 'Asset Classes'], link: '/dashboard/esg/pcaf' },
+  ], [])
+
+  return { frameworks, frameworkData: data, loading }
+}
+
+// --- SUB-COMPONENTS ---
+
+const Header = () => (
+  <div className="mb-8">
+    <h1 className="text-4xl font-bold text-greenly-charcoal mb-2">ESG Frameworks</h1>
+    <p className="text-lg text-greenly-slate">
+      Track your progress and compliance across major ESG reporting frameworks.
+    </p>
+  </div>
+)
+
+const SummaryCard = ({ title, value, icon: Icon, color, loading }) => {
+  if (loading) return <SkeletonLoader className="h-32 w-full" />
+  return (
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+      <div className={`bg-${color}-100 text-${color}-600 p-3.5 rounded-full inline-block mb-4`}>
+        <Icon className="h-6 w-6" />
+      </div>
+      <p className="text-3xl font-bold text-greenly-charcoal">{value}</p>
+      <p className="text-sm font-medium text-greenly-slate">{title}</p>
+    </div>
+  )
+}
+
+const FrameworkCard = ({ framework, data, loading }) => {
+  if (loading) return <SkeletonLoader className="h-[400px] w-full" />
+
+  const { icon: Icon, color } = framework
+  const progress = data?.progress || 0
+
+  const getStatus = (p) => {
+    if (p >= 90) return { label: 'Compliant', icon: CheckCircle, color: 'green' }
+    if (p >= 50) return { label: 'In Progress', icon: Clock, color: 'blue' }
+    if (p > 0) return { label: 'Started', icon: Clock, color: 'yellow' }
+    return { label: 'Not Started', icon: Info, color: 'gray' }
   }
 
-  const frameworks = [
-    {
-      id: 'gri',
-      name: 'GRI Standards 2021',
-      fullName: 'Global Reporting Initiative',
-      description: 'The world\'s most widely used sustainability reporting framework. Covers economic, environmental, and social impacts.',
-      icon: Globe2,
-      color: 'bg-blue-500',
-      textColor: 'text-blue-600',
-      bgLight: 'bg-blue-50',
-      link: '/dashboard/esg/gri',
-      category: 'Universal',
-      requirements: '25+ disclosure topics',
-      certification: 'GRI Standards',
-      adoptedBy: '10,000+ organizations',
-      keyBenefits: [
-        'Widely recognized globally',
-        'Comprehensive materiality approach',
-        'Stakeholder engagement focus',
-        'Industry-specific guidance'
-      ],
-      mainTopics: [
-        'Organizational Context',
-        'Stakeholder Engagement',
-        'Material Topics',
-        'Economic Performance',
-        'Environmental Impact',
-        'Social Responsibility'
-      ]
-    },
-    {
-      id: 'tcfd',
-      name: 'TCFD Recommendations',
-      fullName: 'Task Force on Climate-related Financial Disclosures',
-      description: 'Framework for climate-related financial risk disclosures. Focuses on governance, strategy, risk management, and metrics.',
-      icon: TrendingUp,
-      color: 'bg-green-500',
-      textColor: 'text-green-600',
-      bgLight: 'bg-green-50',
-      link: '/dashboard/esg/tcfd',
-      category: 'Climate',
-      requirements: '11 recommended disclosures',
-      certification: 'TCFD Supporter',
-      adoptedBy: '3,900+ organizations',
-      keyBenefits: [
-        'Investor-focused reporting',
-        'Climate risk assessment',
-        'Scenario analysis',
-        'Financial materiality'
-      ],
-      mainTopics: [
-        'Governance',
-        'Strategy',
-        'Risk Management',
-        'Metrics & Targets',
-        'Climate Scenarios',
-        'Transition Plans'
-      ]
-    },
-    {
-      id: 'sbti',
-      name: 'SBTi Net-Zero',
-      fullName: 'Science Based Targets initiative',
-      description: 'Framework for setting emissions reduction targets aligned with climate science. Supports 1.5°C pathway commitments.',
-      icon: Target,
-      color: 'bg-orange-500',
-      textColor: 'text-orange-600',
-      bgLight: 'bg-orange-50',
-      link: '/dashboard/esg/sbti',
-      category: 'Climate Action',
-      requirements: 'Near-term + Long-term targets',
-      certification: 'SBTi Validated',
-      adoptedBy: '4,000+ companies',
-      keyBenefits: [
-        'Science-based credibility',
-        '1.5°C alignment',
-        'Net-zero pathway',
-        'Investor confidence'
-      ],
-      mainTopics: [
-        'Target Setting',
-        'Scope 1-3 Emissions',
-        'Reduction Pathways',
-        'Net-Zero Commitment',
-        'Progress Tracking',
-        'Verification'
-      ]
-    },
-    {
-      id: 'csrd',
-      name: 'CSRD Compliance',
-      fullName: 'Corporate Sustainability Reporting Directive',
-      description: 'EU mandatory sustainability reporting directive. Requires double materiality assessment and ESRS compliance.',
-      icon: Building2,
-      color: 'bg-purple-500',
-      textColor: 'text-purple-600',
-      bgLight: 'bg-purple-50',
-      link: '/dashboard/esg/csrd',
-      category: 'EU Regulation',
-      requirements: 'Full ESRS standards',
-      certification: 'CSRD Compliant',
-      adoptedBy: '50,000+ EU companies (phased)',
-      keyBenefits: [
-        'EU market access',
-        'Legal compliance',
-        'Investor transparency',
-        'Standardized reporting'
-      ],
-      mainTopics: [
-        'Double Materiality',
-        'ESRS Standards',
-        'Value Chain',
-        'Due Diligence',
-        'Third-party Assurance',
-        'Digital Reporting'
-      ]
-    },
-    {
-      id: 'cdp',
-      name: 'CDP Disclosure',
-      fullName: 'Carbon Disclosure Project',
-      description: 'Global environmental disclosure system. Covers climate change, water security, and forests through investor requests.',
-      icon: Leaf,
-      color: 'bg-teal-500',
-      textColor: 'text-teal-600',
-      bgLight: 'bg-teal-50',
-      link: '/dashboard/esg/cdp',
-      category: 'Environmental',
-      requirements: 'Annual questionnaire',
-      certification: 'CDP A-List',
-      adoptedBy: '18,700+ companies',
-      keyBenefits: [
-        'Investor transparency',
-        'Environmental leadership',
-        'Supply chain engagement',
-        'Public scoring'
-      ],
-      mainTopics: [
-        'Climate Change',
-        'Water Security',
-        'Forests',
-        'Supply Chain',
-        'Risk & Opportunity',
-        'Emissions Data'
-      ]
-    },
-    {
-      id: 'sdg',
-      name: 'UN SDG Alignment',
-      fullName: 'United Nations Sustainable Development Goals',
-      description: 'Global framework for sustainable development. 17 goals addressing poverty, inequality, climate, and prosperity.',
-      icon: Award,
-      color: 'bg-indigo-500',
-      textColor: 'text-indigo-600',
-      bgLight: 'bg-indigo-50',
-      link: '/dashboard/esg/sdg',
-      category: 'Impact',
-      requirements: '17 goals, 169 targets',
-      certification: 'SDG Aligned',
-      adoptedBy: 'All UN Member States',
-      keyBenefits: [
-        'Global impact alignment',
-        'Stakeholder engagement',
-        'Business opportunity identification',
-        'Comprehensive sustainability'
-      ],
-      mainTopics: [
-        'Goal Prioritization',
-        'Target Mapping',
-        'Impact Measurement',
-        'Partnership Development',
-        'Progress Reporting',
-        'Innovation Opportunities'
-      ]
-    },
-    {
-      id: 'sasb',
-      name: 'SASB Standards',
-      fullName: 'Sustainability Accounting Standards Board',
-      description: 'Industry-specific standards for financially material sustainability information. 77 industries across 11 sectors.',
-      icon: DollarSign,
-      color: 'bg-emerald-500',
-      textColor: 'text-emerald-600',
-      bgLight: 'bg-emerald-50',
-      link: '/dashboard/esg/sasb',
-      category: 'Financial Materiality',
-      requirements: 'Industry-specific metrics',
-      certification: 'SASB Aligned',
-      adoptedBy: '2,000+ companies globally',
-      keyBenefits: [
-        'Investor-focused disclosures',
-        'Financial materiality',
-        'Industry-specific metrics',
-        'SEC filing integration'
-      ],
-      mainTopics: [
-        'Environment',
-        'Social Capital',
-        'Human Capital',
-        'Business Model & Innovation',
-        'Leadership & Governance',
-        'Industry Metrics'
-      ]
-    },
-    {
-      id: 'issb',
-      name: 'IFRS S1 & S2',
-      fullName: 'International Sustainability Standards Board',
-      description: 'Global baseline for sustainability disclosures (IFRS S1) and climate-related disclosures (IFRS S2). Incorporates TCFD and SASB.',
-      icon: Globe2,
-      color: 'bg-cyan-500',
-      textColor: 'text-cyan-600',
-      bgLight: 'bg-cyan-50',
-      link: '/dashboard/esg/issb',
-      category: 'Global Baseline',
-      requirements: 'S1 General + S2 Climate',
-      certification: 'ISSB Compliant',
-      adoptedBy: 'Jurisdictions adopting globally',
-      keyBenefits: [
-        'Global baseline standard',
-        'Investor decision-useful',
-        'Builds on TCFD & SASB',
-        'Enterprise value focus'
-      ],
-      mainTopics: [
-        'Governance',
-        'Strategy',
-        'Risk Management',
-        'Metrics & Targets',
-        'Climate Risks',
-        'Sustainability Opportunities'
-      ]
-    },
-    {
-      id: 'pcaf',
-      name: 'PCAF Standard',
-      fullName: 'Partnership for Carbon Accounting Financials',
-      description: 'Global standard for measuring and disclosing financed emissions from loans and investments. Covers 7 asset classes with data quality scoring.',
-      icon: DollarSign,
-      color: 'bg-slate-500',
-      textColor: 'text-slate-600',
-      bgLight: 'bg-slate-50',
-      link: '/dashboard/esg/pcaf',
-      category: 'Financed Emissions',
-      requirements: '7 asset classes, DQ scoring',
-      certification: 'PCAF Member',
-      adoptedBy: '400+ financial institutions',
-      keyBenefits: [
-        'Financed emissions calculation',
-        'Financial sector focus',
-        'Data quality framework',
-        'Portfolio decarbonization'
-      ],
-      mainTopics: [
-        'Listed Equity & Bonds',
-        'Business Loans',
-        'Project Finance',
-        'Commercial Real Estate',
-        'Mortgages & Motor Vehicles',
-        'Sovereign Debt'
-      ]
-    }
-  ]
-
-  const getStatusBadge = (progress) => {
-    if (progress >= 80) {
-      return {
-        label: 'Compliant',
-        color: 'bg-green-100 text-green-800',
-        icon: CheckCircle
-      }
-    } else if (progress >= 40) {
-      return {
-        label: 'In Progress',
-        color: 'bg-yellow-100 text-yellow-800',
-        icon: Clock
-      }
-    } else if (progress > 0) {
-      return {
-        label: 'Started',
-        color: 'bg-blue-100 text-blue-800',
-        icon: Clock
-      }
-    } else {
-      return {
-        label: 'Not Started',
-        color: 'bg-gray-100 text-gray-800',
-        icon: AlertCircle
-      }
-    }
-  }
-
-  const overallProgress = () => {
-    const total = Object.values(frameworkData).reduce((sum, fw) => sum + fw.progress, 0)
-    return Math.round(total / 6)
-  }
-
-  const completedFrameworks = () => {
-    return Object.values(frameworkData).filter(fw => fw.progress >= 80).length
-  }
-
-  const inProgressFrameworks = () => {
-    return Object.values(frameworkData).filter(fw => fw.progress > 0 && fw.progress < 80).length
-  }
+  const status = getStatus(progress)
+  const StatusIcon = status.icon
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">ESG Frameworks</h1>
-        <p className="text-gray-600">
-          Comprehensive overview of all supported ESG reporting frameworks and standards
-        </p>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <FileText className="h-6 w-6 text-blue-600" />
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-md hover:border-greenly-primary transition-all flex flex-col">
+      <div className={`h-2.5 rounded-t-2xl bg-${color}-500`}></div>
+      <div className="p-6 flex-grow flex flex-col">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <div className={`bg-${color}-100 p-3.5 rounded-full`}>
+              <Icon className={`h-6 w-6 text-${color}-600`} />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-greenly-charcoal">{framework.name}</h3>
+              <p className="text-sm text-greenly-slate">{framework.category}</p>
             </div>
           </div>
-          <div className="text-2xl font-bold text-gray-900 mb-1">6</div>
-          <div className="text-sm text-gray-600">Total Frameworks</div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-green-100 rounded-lg">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-            </div>
+          <div className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-${status.color}-100 text-${status.color}-800`}>
+            <StatusIcon className="h-3.5 w-3.5" />
+            {status.label}
           </div>
-          <div className="text-2xl font-bold text-gray-900 mb-1">{completedFrameworks()}</div>
-          <div className="text-sm text-gray-600">Compliant</div>
         </div>
+        <p className="text-sm text-greenly-slate mb-4 flex-grow">{framework.description}</p>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-yellow-100 rounded-lg">
-              <Clock className="h-6 w-6 text-yellow-600" />
-            </div>
+        <div>
+          <div className="flex justify-between text-sm mb-1">
+            <span className="font-medium text-greenly-charcoal">Progress</span>
+            <span className="font-bold text-greenly-charcoal">{progress}%</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900 mb-1">{inProgressFrameworks()}</div>
-          <div className="text-sm text-gray-600">In Progress</div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <TrendingUp className="h-6 w-6 text-purple-600" />
-            </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className={`bg-${color}-500 h-2 rounded-full`} style={{ width: `${progress}%` }}></div>
           </div>
-          <div className="text-2xl font-bold text-gray-900 mb-1">{overallProgress()}%</div>
-          <div className="text-sm text-gray-600">Overall Progress</div>
+          <div className="text-xs text-greenly-slate mt-1">{data?.completedFields || 0} of {data?.totalFields || 0} fields</div>
         </div>
-      </div>
 
-      {/* Overall Progress Bar */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Overall Framework Completion</h2>
-        <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
-          <div
-            className="bg-gradient-to-r from-cd-teal to-cd-green h-4 rounded-full transition-all duration-500"
-            style={{ width: `${overallProgress()}%` }}
-          />
-        </div>
-        <div className="flex justify-between text-sm text-gray-600">
-          <span>0%</span>
-          <span className="font-medium text-gray-900">{overallProgress()}% Complete</span>
-          <span>100%</span>
-        </div>
-      </div>
-
-      {/* Framework Cards Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {frameworks.map((framework) => {
-          const data = frameworkData[framework.id]
-          const status = getStatusBadge(data.progress)
-          const Icon = framework.icon
-          const StatusIcon = status.icon
-
-          return (
-            <div key={framework.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-              {/* Header with colored bar */}
-              <div className={`${framework.color} h-2`} />
-              
-              <div className="p-6">
-                {/* Framework Title */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start space-x-4">
-                    <div className={`${framework.bgLight} p-3 rounded-lg`}>
-                      <Icon className={`h-6 w-6 ${framework.textColor}`} />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-900 mb-1">{framework.name}</h3>
-                      <p className="text-sm text-gray-500">{framework.fullName}</p>
-                    </div>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${status.color} flex items-center space-x-1`}>
-                    <StatusIcon className="h-3 w-3" />
-                    <span>{status.label}</span>
-                  </span>
-                </div>
-
-                {/* Description */}
-                <p className="text-gray-600 text-sm mb-4">{framework.description}</p>
-
-                {/* Progress Bar */}
-                <div className="mb-4">
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600">Progress</span>
-                    <span className="font-medium text-gray-900">{Math.round(data.progress)}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`${framework.color} h-2 rounded-full transition-all duration-500`}
-                      style={{ width: `${data.progress}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-500 mt-1">
-                    <span>{data.completedFields} of {data.totalFields} fields completed</span>
-                    <span>Score: {data.score}/100</span>
-                  </div>
-                </div>
-
-                {/* Framework Details */}
-                <div className="grid grid-cols-2 gap-4 mb-4 py-4 border-y border-gray-100">
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Category</div>
-                    <div className="text-sm font-medium text-gray-900">{framework.category}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Requirements</div>
-                    <div className="text-sm font-medium text-gray-900">{framework.requirements}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Certification</div>
-                    <div className="text-sm font-medium text-gray-900">{framework.certification}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Adopted By</div>
-                    <div className="text-sm font-medium text-gray-900">{framework.adoptedBy}</div>
-                  </div>
-                </div>
-
-                {/* Key Benefits */}
-                <div className="mb-4">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Key Benefits</h4>
-                  <ul className="space-y-1">
-                    {framework.keyBenefits.map((benefit, idx) => (
-                      <li key={idx} className="flex items-start text-sm text-gray-600">
-                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>{benefit}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Main Topics */}
-                <div className="mb-4">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Main Topics</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {framework.mainTopics.slice(0, 4).map((topic, idx) => (
-                      <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                        {topic}
-                      </span>
-                    ))}
-                    {framework.mainTopics.length > 4 && (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded">
-                        +{framework.mainTopics.length - 4} more
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex space-x-3">
-                  <Link
-                    to={framework.link}
-                    className={`flex-1 ${framework.color} text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center space-x-2`}
-                  >
-                    <BookOpen className="h-4 w-4" />
-                    <span className="text-sm font-medium">
-                      {data.progress > 0 ? 'Continue' : 'Start'} Collection
-                    </span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                  <button
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                    title="Download Framework Guide"
-                  >
-                    <Download className="h-4 w-4 text-gray-600" />
-                  </button>
-                  <button
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                    title="Learn More"
-                  >
-                    <ExternalLink className="h-4 w-4 text-gray-600" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Help Section */}
-      <div className="mt-8 bg-gradient-to-r from-cd-teal to-cd-green rounded-lg shadow-md p-6 text-white">
-        <div className="flex items-start space-x-4">
-          <div className="p-3 bg-white/20 rounded-lg">
-            <BookOpen className="h-6 w-6" />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-bold mb-2">Need Help Choosing a Framework?</h3>
-            <p className="text-white/90 mb-4">
-              Not sure which framework to prioritize? Our ESG experts can help you determine the best frameworks 
-              for your industry, region, and stakeholder requirements.
-            </p>
-            <div className="flex space-x-3">
-              <button className="px-4 py-2 bg-white text-cd-teal rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm">
-                Schedule Consultation
-              </button>
-              <button className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors font-medium text-sm">
-                View Framework Comparison
-              </button>
-            </div>
-          </div>
+        <div className="border-t border-gray-200 mt-6 pt-6 flex items-center gap-3">
+          <Link to={framework.link} className="flex-grow">
+            <button className={`w-full flex items-center justify-center gap-2 rounded-lg bg-${color}-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-${color}-600 transition-all`}>
+              <BookOpen className="h-4 w-4" />
+              {progress > 0 ? 'Continue' : 'Start'}
+            </button>
+          </Link>
+          <button className="p-2.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"><Download className="h-4 w-4" /></button>
+          <button className="p-2.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"><ExternalLink className="h-4 w-4" /></button>
         </div>
       </div>
     </div>
   )
 }
 
-export default ESGFrameworksPage
+const HelpSection = () => (
+  <div className="mt-8 bg-gradient-to-r from-greenly-primary to-green-600 rounded-2xl p-8 text-white">
+    <div className="flex flex-col md:flex-row items-center gap-6">
+      <div className="bg-white/20 p-4 rounded-full">
+        <Info className="h-8 w-8" />
+      </div>
+      <div className="flex-grow text-center md:text-left">
+        <h3 className="text-2xl font-bold mb-2">Need Help Choosing a Framework?</h3>
+        <p className="text-white/90 mb-4 max-w-2xl">
+          Our ESG experts can help you determine the best frameworks for your industry, region, and stakeholder requirements.
+        </p>
+      </div>
+      <div className="flex-shrink-0">
+        <button className="px-6 py-3 bg-white text-greenly-primary rounded-xl hover:bg-gray-100 transition-colors font-semibold text-md shadow-md">
+          Schedule Consultation
+        </button>
+      </div>
+    </div>
+  </div>
+)
+
+// --- MAIN COMPONENT ---
+export default function ESGFrameworksPage() {
+  const { frameworks, frameworkData, loading } = useFrameworksData()
+
+  const summaryStats = useMemo(() => {
+    if (loading || !frameworkData) {
+      return { total: 0, compliant: 0, inProgress: 0, overallProgress: 0 }
+    }
+    const dataValues = Object.values(frameworkData)
+    const total = frameworks.length
+    const compliant = dataValues.filter(d => d.progress >= 90).length
+    const inProgress = dataValues.filter(d => d.progress > 0 && d.progress < 90).length
+    const overallProgress = Math.round(dataValues.reduce((sum, d) => sum + d.progress, 0) / total)
+    return { total, compliant, inProgress, overallProgress }
+  }, [frameworks, frameworkData, loading])
+
+  return (
+    <div className="p-4 sm:p-6 bg-greenly-light-gray min-h-screen">
+      <Header />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <SummaryCard title="Total Frameworks" value={summaryStats.total} icon={FileText} color="gray" loading={loading} />
+        <SummaryCard title="Compliant" value={summaryStats.compliant} icon={CheckCircle} color="green" loading={loading} />
+        <SummaryCard title="In Progress" value={summaryStats.inProgress} icon={Clock} color="blue" loading={loading} />
+        <SummaryCard title="Overall Progress" value={`${summaryStats.overallProgress}%`} icon={TrendingUp} color="purple" loading={loading} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        {frameworks.map((framework) => (
+          <FrameworkCard
+            key={framework.id}
+            framework={framework}
+            data={frameworkData ? frameworkData[framework.id] : null}
+            loading={loading}
+          />
+        ))}
+      </div>
+
+      <HelpSection />
+    </div>
+  )
+}

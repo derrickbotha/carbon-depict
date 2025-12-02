@@ -1,12 +1,11 @@
-// Cache bust 2025-10-23
 import React from 'react';
 import { X, AlertTriangle, CheckCircle, Info } from '@atoms/Icon';
 
 const iconMap = {
-  success: <Check strokeWidth={2} />,
-  warning: <Alert strokeWidth={2} />,
-  info: <Info strokeWidth={2} />,
-  error: <Alert strokeWidth={2} />,
+  success: <CheckCircle className="h-6 w-6 text-cd-success" strokeWidth={2} />,
+  warning: <AlertTriangle className="h-6 w-6 text-cd-warning" strokeWidth={2} />,
+  info: <Info className="h-6 w-6 text-cd-info" strokeWidth={2} />,
+  error: <AlertTriangle className="h-6 w-6 text-cd-error" strokeWidth={2} />,
 };
 
 const AlertModal = ({ isOpen, onClose, title, message, type = 'info' }) => {
@@ -46,4 +45,3 @@ const AlertModal = ({ isOpen, onClose, title, message, type = 'info' }) => {
 };
 
 export default AlertModal;
-

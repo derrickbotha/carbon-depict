@@ -1,4 +1,3 @@
-// Cache bust 2025-10-23
 import { useState, useEffect } from 'react'
 import { Download, X } from '@atoms/Icon'
 
@@ -86,7 +85,7 @@ const PWAInstallPrompt = () => {
         <div className="mb-4 flex items-start justify-between">
           <div className="flex items-center">
             <div className="mr-3 flex h-12 w-12 items-center justify-center rounded-lg bg-cd-forest text-white">
-              <Download strokeWidth={2} />
+              <Download className="h-6 w-6" />
             </div>
             <div>
               <h3 className="font-bold text-cd-midnight">Install Carbon Depict</h3>
@@ -143,4 +142,3 @@ const PWAInstallPrompt = () => {
 }
 
 export default PWAInstallPrompt
-

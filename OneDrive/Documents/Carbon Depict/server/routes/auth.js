@@ -155,7 +155,7 @@ router.post('/register', [
     // Generate verification token
     const verificationToken = jwt.sign(
       { userId: user.id, type: 'email_verification' },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
     )
 
@@ -208,7 +208,7 @@ router.post('/verify-email', async (req, res) => {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key')
 
     if (decoded.type !== 'email_verification') {
       return res.status(400).json({ error: 'Invalid token type' })
@@ -267,24 +267,12 @@ router.post('/verify-email', async (req, res) => {
  */
 router.post('/login', [
   body('email').isEmail().normalizeEmail(),
-  body('password').notEmpty().withMessage('Password is required'),
+  body('password').notEmpty(),
 ], async (req, res) => {
   try {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      // Format validation errors into a user-friendly message
-      const errorMessages = errors.array().map(err => {
-        if (err.param === 'email') {
-          return 'Please provide a valid email address'
-        } else if (err.param === 'password') {
-          return 'Password is required'
-        }
-        return err.msg || `${err.param} is invalid`
-      })
-      return res.status(400).json({ 
-        error: errorMessages.join('. '),
-        errors: errors.array()
-      })
+      return res.status(400).json({ errors: errors.array() })
     }
 
     const { email, password } = req.body
@@ -300,14 +288,27 @@ router.post('/login', [
       return res.status(401).json({ error: 'Invalid email or password' })
     }
 
+    if (user) {
+      console.log('User found:', user.email);
+      console.log('Company populated:', user.company ? user.company.name : 'NO COMPANY');
+    }
+
+    // Check if user's company is populated and active
+    if (!user.company || !user.company.isActive) {
+      if (!user.company) {
+        console.error(`User ${user.email} has no associated company or the company ID is invalid.`);
+        return res.status(403).json({ error: 'Your user account is not associated with a valid company. Please contact support.' });
+      }
+      
+      // Check if company is active
+      if (!user.company.isActive) {
+        return res.status(403).json({ error: 'Company account is inactive. Please contact your administrator.' })
+      }
+    }
+
     // Check if account is active
     if (!user.isActive) {
       return res.status(403).json({ error: 'Account has been deactivated. Please contact support.' })
-    }
-
-    // Check if company is active
-    if (!user.company.isActive) {
-      return res.status(403).json({ error: 'Company account is inactive. Please contact your administrator.' })
     }
 
     // Verify password
@@ -336,14 +337,14 @@ router.post('/login', [
         role: user.role,
         email: user.email
       },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
     )
 
     // Generate refresh token
     const refreshToken = jwt.sign(
       { userId: user.id, type: 'refresh' },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '30d' }
     )
 
@@ -430,7 +431,7 @@ router.post('/refresh', async (req, res) => {
         role: user.role,
         email: user.email
       },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
     )
 
@@ -464,7 +465,7 @@ router.post('/forgot-password', [
     // Generate reset token
     const resetToken = jwt.sign(
       { userId: user.id, type: 'password_reset' },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '1h' }
     )
 
@@ -499,7 +500,7 @@ router.post('/reset-password', [
     const { token, password } = req.body
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key')
 
     if (decoded.type !== 'password_reset') {
       return res.status(400).json({ error: 'Invalid token type' })

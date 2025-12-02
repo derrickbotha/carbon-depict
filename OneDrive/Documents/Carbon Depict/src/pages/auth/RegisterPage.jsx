@@ -1,4 +1,3 @@
-// Cache bust 2025-10-23
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Input, Select } from '@atoms/Input'
@@ -86,7 +85,7 @@ export default function RegisterPage() {
         <div className="rounded-lg bg-white p-8 shadow-cd-md">
           {error && (
             <div className="mb-4 rounded-lg bg-red-50 p-4 flex items-start gap-3">
-              <Alert strokeWidth={2} />
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-red-800">Registration Failed</p>
                 <p className="text-sm text-red-700 mt-1">{error}</p>
@@ -159,14 +158,11 @@ export default function RegisterPage() {
             />
 
             <div className="text-sm text-cd-muted">
-              <label htmlFor="terms-accept" className="flex items-start gap-2 cursor-pointer">
+              <label className="flex items-start gap-2">
                 <input
-                  id="terms-accept"
-                  name="terms-accept"
                   type="checkbox"
                   required
                   className="mt-1 h-4 w-4 rounded border-cd-border text-cd-midnight focus:ring-cd-desert"
-                  autoComplete="off"
                 />
                 <span>
                   I agree to the{' '}
@@ -202,4 +198,3 @@ export default function RegisterPage() {
     </div>
   )
 }
-

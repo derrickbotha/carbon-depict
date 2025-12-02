@@ -114,6 +114,17 @@ export const apiClient = {
     delete: (id) => api.delete(`/esg/metrics/${id}`),
   },
 
+  // ESG Framework Data endpoints
+  esgFrameworkData: {
+    getAll: () => api.get('/esg/framework-data'),
+    getByFramework: (framework) => api.get(`/esg/framework-data/${framework}`),
+    save: (framework, data) => api.post(`/esg/framework-data/${framework}`, { data }),
+    update: (framework, data, score) => api.put(`/esg/framework-data/${framework}`, { data, score }),
+    delete: (framework) => api.delete(`/esg/framework-data/${framework}`),
+    getScores: (framework) => api.get(`/esg/framework-data/${framework}/scores`),
+    getAllScores: () => api.get('/esg/framework-data/scores/all'),
+  },
+
   // ESG Reports endpoints
   esgReports: {
     getAll: (params) => api.get('/esg/reports', { params }),

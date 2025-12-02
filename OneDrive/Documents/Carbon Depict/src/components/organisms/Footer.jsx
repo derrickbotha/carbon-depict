@@ -1,4 +1,3 @@
-// Cache bust 2025-10-23
 import { Link } from 'react-router-dom'
 import { Mail, Globe, Leaf } from '@atoms/Icon'
 
@@ -78,7 +77,7 @@ export default function Footer() {
                 className="text-cd-muted transition-colors hover:text-cd-midnight"
                 aria-label="Email"
               >
-             <Mail strokeWidth={2} />
+                <Mail className="h-5 w-5" />
               </a>
               <a
                 href="https://carbondepict.com"
@@ -87,7 +86,7 @@ export default function Footer() {
                 className="text-cd-muted transition-colors hover:text-cd-midnight"
                 aria-label="Website"
               >
-             <Globe strokeWidth={2} />
+                <Globe className="h-5 w-5" />
               </a>
             </div>
           </div>
@@ -147,4 +146,3 @@ export default function Footer() {
     </footer>
   )
 }
-

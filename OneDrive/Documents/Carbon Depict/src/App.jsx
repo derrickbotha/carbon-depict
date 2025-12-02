@@ -3,6 +3,7 @@ import MarketingLayout from './layouts/MarketingLayout'
 import DashboardLayout from './layouts/DashboardLayout'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
 import { AuthProvider } from './contexts/AuthContext'
+import { NavigationHistoryProvider } from './contexts/NavigationHistoryContext'
 import ProtectedRoute from './components/ProtectedRoute'
 
 // Marketing Pages
@@ -28,7 +29,7 @@ import CDPDataCollection from './pages/dashboard/CDPDataCollection'
 import SDGDataCollection from './pages/dashboard/SDGDataCollection'
 import SASBDataCollection from './pages/dashboard/SASBDataCollection'
 import ISSBDataCollection from './pages/dashboard/ISSBDataCollection'
-import PCAFDataCollection from './pages/dashboard/PCAFDataCollection'
+import PCAFDataCollection from './pages/dashboard/PCAFDataCollectionNew'
 import ESGDataEntryHub from './pages/dashboard/ESGDataEntryHub'
 import MaterialityAssessment from './pages/dashboard/MaterialityAssessmentEnhanced'
 import TargetManagement from './pages/dashboard/TargetManagement'
@@ -63,9 +64,10 @@ function App() {
   return (
     <AuthProvider>
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <Routes>
-        {/* Marketing Routes */}
-        <Route path="/" element={<MarketingLayout />}>
+        <NavigationHistoryProvider>
+          <Routes>
+          {/* Marketing Routes */}
+          <Route path="/" element={<MarketingLayout />}>
           <Route index element={<HomePage />} />
           <Route path="pricing" element={<PricingPage />} />
           <Route path="about" element={<AboutPage />} />
@@ -106,7 +108,6 @@ function App() {
           <Route path="esg/issb" element={<ISSBDataCollection />} />
           <Route path="esg/pcaf" element={<PCAFDataCollection />} />
           <Route path="esg/data-entry" element={<ESGDataEntryHub />} />
-          <Route path="esg/data-entry/ghg-inventory" element={<GHGInventory />} />
           <Route path="esg/data-entry/energy-management" element={<EnergyManagementCollection />} />
           <Route path="esg/data-entry/employee-demographics" element={<EmployeeDemographicsCollection />} />
           <Route path="esg/data-entry/health-safety" element={<HealthSafetyCollection />} />
@@ -126,9 +127,11 @@ function App() {
           <Route path="esg/reports/generate" element={<ReportGenerator />} />
           <Route path="esg/social" element={<SocialDashboard />} />
           <Route path="esg/governance" element={<GovernanceDashboard />} />
+          <Route path="ghg-inventory" element={<GHGInventory />} />
           <Route path="esg/environmental" element={<EnvironmentalDashboard />} />
         </Route>
       </Routes>
+        </NavigationHistoryProvider>
     </Router>
     <PWAInstallPrompt />
     </AuthProvider>

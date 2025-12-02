@@ -36,6 +36,7 @@ import {
   RefreshCw,
   MoreVertical,
   MoreHorizontal,
+  Share2,
   
   // Status
   Check,
@@ -88,6 +89,7 @@ import {
   LogIn,
   Bell,
   Mail,
+  MessageSquare,
   Lock,
   Unlock,
   
@@ -100,6 +102,8 @@ import {
   FileImage,
   FileDown,
   FilePlus,
+  ClipboardList,
+  Clipboard,
   
   // ESG & Sustainability
   Heart,
@@ -132,6 +136,7 @@ import {
   Loader2,
   Lightbulb,
   Package,
+  Calculator,
 } from 'lucide-react'
 
 export {
@@ -161,7 +166,8 @@ export {
   RefreshCw,
   MoreVertical,
   MoreHorizontal,
-  
+  Share2,
+
   // Status
   Check,
   CheckCircle,
@@ -213,6 +219,7 @@ export {
   LogIn,
   Bell,
   Mail,
+  MessageSquare,
   Lock,
   Unlock,
   
@@ -225,6 +232,8 @@ export {
   FileImage,
   FileDown,
   FilePlus,
+  ClipboardList,
+  Clipboard,
   
   // ESG & Sustainability
   Heart,
@@ -257,5 +266,6 @@ export {
   Loader2,
   Lightbulb,
   Package,
+  Calculator,
 }
 

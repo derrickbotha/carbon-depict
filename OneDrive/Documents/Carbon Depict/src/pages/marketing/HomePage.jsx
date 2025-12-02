@@ -1,4 +1,3 @@
-// Cache bust 2025-10-23
 import Hero from '@molecules/Hero'
 import FeatureCard from '@molecules/FeatureCard'
 import { BarChart3, Leaf, FileText, Users, Globe, Zap, Shield, Target, TrendingUp, CheckCircle, Building2, Award } from '@atoms/Icon'
@@ -126,7 +125,7 @@ export default function HomePage() {
                   <ul className="space-y-2">
                     {pillar.metrics.map((metric) => (
                       <li key={metric} className="flex items-start">
-                        <CheckCircle className="mr-2 mt-1 h-5 w-5 flex-shrink-0 text-green-600" strokeWidth={2} />
+                        <CheckCircle className="mr-2 mt-1 h-5 w-5 flex-shrink-0 text-green-600" />
                         <span className="text-cd-muted">{metric}</span>
                       </li>
                     ))}
@@ -183,7 +182,7 @@ export default function HomePage() {
               <ul className="space-y-4">
                 <li className="flex items-start">
                   <div className="mr-3 mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-green-400">
-                    <CheckCircle className="mr-2 mt-1 h-5 w-5 flex-shrink-0 text-green-600" strokeWidth={2} />
+                    <CheckCircle className="h-4 w-4 text-white" />
                   </div>
                   <div>
                     <strong className="text-white">Framework Analysis:</strong> Compare against GRI, TCFD, CDP, SASB, and SDGs
@@ -191,7 +190,7 @@ export default function HomePage() {
                 </li>
                 <li className="flex items-start">
                   <div className="mr-3 mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-green-400">
-                    <CheckCircle className="mr-2 mt-1 h-5 w-5 flex-shrink-0 text-green-600" strokeWidth={2} />
+                    <CheckCircle className="h-4 w-4 text-white" />
                   </div>
                   <div>
                     <strong className="text-white">Compliance Scoring:</strong> Get detailed scores with actionable improvement suggestions
@@ -199,7 +198,7 @@ export default function HomePage() {
                 </li>
                 <li className="flex items-start">
                   <div className="mr-3 mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-green-400">
-                    <CheckCircle className="mr-2 mt-1 h-5 w-5 flex-shrink-0 text-green-600" strokeWidth={2} />
+                    <CheckCircle className="h-4 w-4 text-white" />
                   </div>
                   <div>
                     <strong className="text-white">Draft Workflow:</strong> Review and approve data before publishing to stakeholders
@@ -337,5 +336,3 @@ export default function HomePage() {
     </div>
   )
 }
-
-

@@ -1,4 +1,3 @@
-// Cache bust 2025-10-23
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -108,7 +107,7 @@ const GRIStandardsCollection = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <Link to="/dashboard/esg/data-entry" className="p-2 hover:bg-gray-100 rounded-lg">
-                <ArrowLeft strokeWidth={2} />
+                <ArrowLeft className="w-5 h-5 text-gray-600" strokeWidth={2} />
               </Link>
               <div>
                 <h1 className="text-2xl font-bold text-midnight">GRI Standards Data Collection</h1>
@@ -117,11 +116,11 @@ const GRIStandardsCollection = () => {
             </div>
             <div className="flex gap-2">
               <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                <Download strokeWidth={2} />
+                <Download className="w-4 h-4" strokeWidth={2} />
                 Export
               </button>
               <button className="px-4 py-2 bg-teal text-white rounded-lg text-sm font-medium hover:bg-opacity-90 flex items-center gap-2">
-                <Save strokeWidth={2} />
+                <Save className="w-4 h-4" strokeWidth={2} />
                 Save
               </button>
             </div>
@@ -175,7 +174,7 @@ const GRIStandardsCollection = () => {
                   <div key={key} className="space-y-2">
                     <label className="flex items-center gap-2 text-sm font-medium text-midnight">
                       {field.completed ? (
-                        <Check strokeWidth={2} />
+                        <CheckCircle2 className="w-4 h-4 text-teal" strokeWidth={2} />
                       ) : (
                         <Circle className="w-4 h-4 text-gray-300" strokeWidth={2} />
                       )}
@@ -202,4 +201,3 @@ const GRIStandardsCollection = () => {
 };
 
 export default GRIStandardsCollection;
-

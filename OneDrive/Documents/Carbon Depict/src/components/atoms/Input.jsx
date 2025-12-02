@@ -1,10 +1,11 @@
 // Cache bust 2025-10-23
 import { forwardRef } from 'react'
 import clsx from 'clsx'
+import { Search } from './Icon'
 
 /**
- * Text Input - Standard text input field
- * Follows CDDS design with proper focus states
+ * Text Input - Greenly Design System
+ * 40px height, greenly-light borders, greenly-primary focus rings
  */
 export const Input = forwardRef(({ 
   label,
@@ -22,24 +23,18 @@ export const Input = forwardRef(({
       {label && (
         <label 
           htmlFor={inputId}
-          className="mb-2 block text-sm font-medium text-cd-text"
+          className="mb-2 block text-sm font-medium text-greenly-charcoal"
         >
           {label}
-          {required && <span className="ml-1 text-cd-error">*</span>}
+          {required && <span className="ml-1 text-greenly-alert">*</span>}
         </label>
       )}
       <input
         ref={ref}
         id={inputId}
         className={clsx(
-          'w-full px-4 py-2 border rounded-md',
-          'placeholder:text-cd-muted',
-          'transition-all duration-150 ease-cd-ease',
-          'focus:outline-none focus:ring-2 focus:ring-offset-0',
-          error
-            ? 'border-cd-error focus:ring-cd-error'
-            : 'border-cd-border focus:ring-cd-desert focus:border-transparent',
-          'disabled:bg-cd-surface disabled:cursor-not-allowed disabled:opacity-60'
+          'input-base',
+          error && 'border-greenly-alert focus:ring-greenly-alert'
         )}
         aria-invalid={error ? 'true' : 'false'}
         aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
@@ -48,7 +43,7 @@ export const Input = forwardRef(({
       {error && (
         <p 
           id={`${inputId}-error`}
-          className="mt-2 text-sm text-cd-error"
+          className="mt-2 text-sm text-greenly-alert"
           role="alert"
         >
           {error}
@@ -57,7 +52,7 @@ export const Input = forwardRef(({
       {helperText && !error && (
         <p 
           id={`${inputId}-helper`}
-          className="mt-2 text-sm text-cd-muted"
+          className="mt-2 text-sm text-greenly-gray"
         >
           {helperText}
         </p>
@@ -67,6 +62,36 @@ export const Input = forwardRef(({
 })
 
 Input.displayName = 'Input'
+
+/**
+ * SearchInput - Input with search icon
+ */
+export const SearchInput = forwardRef(({ 
+  placeholder = 'Search...',
+  className = '',
+  id,
+  ...props 
+}, ref) => {
+  const inputId = id || `search-${Math.random().toString(36).substr(2, 9)}`
+  
+  return (
+    <div className={clsx('relative', className)}>
+      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+        <Search className="h-5 w-5 text-greenly-gray" />
+      </div>
+      <input
+        ref={ref}
+        id={inputId}
+        type="search"
+        placeholder={placeholder}
+        className="search-input"
+        {...props}
+      />
+    </div>
+  )
+})
+
+SearchInput.displayName = 'SearchInput'
 
 /**
  * Textarea - Multi-line text input
@@ -88,10 +113,10 @@ export const Textarea = forwardRef(({
       {label && (
         <label 
           htmlFor={inputId}
-          className="mb-2 block text-sm font-medium text-cd-text"
+          className="mb-2 block text-sm font-medium text-greenly-charcoal"
         >
           {label}
-          {required && <span className="ml-1 text-cd-error">*</span>}
+          {required && <span className="ml-1 text-greenly-alert">*</span>}
         </label>
       )}
       <textarea
@@ -99,14 +124,8 @@ export const Textarea = forwardRef(({
         id={inputId}
         rows={rows}
         className={clsx(
-          'w-full px-4 py-2 border rounded-md',
-          'placeholder:text-cd-muted resize-y',
-          'transition-all duration-150 ease-cd-ease',
-          'focus:outline-none focus:ring-2 focus:ring-offset-0',
-          error
-            ? 'border-cd-error focus:ring-cd-error'
-            : 'border-cd-border focus:ring-cd-desert focus:border-transparent',
-          'disabled:bg-cd-surface disabled:cursor-not-allowed disabled:opacity-60'
+          'input-base resize-y min-h-[80px]',
+          error && 'border-greenly-alert focus:ring-greenly-alert'
         )}
         aria-invalid={error ? 'true' : 'false'}
         aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
@@ -115,7 +134,7 @@ export const Textarea = forwardRef(({
       {error && (
         <p 
           id={`${inputId}-error`}
-          className="mt-2 text-sm text-cd-error"
+          className="mt-2 text-sm text-greenly-alert"
           role="alert"
         >
           {error}
@@ -124,7 +143,7 @@ export const Textarea = forwardRef(({
       {helperText && !error && (
         <p 
           id={`${inputId}-helper`}
-          className="mt-2 text-sm text-cd-muted"
+          className="mt-2 text-sm text-greenly-gray"
         >
           {helperText}
         </p>
@@ -156,24 +175,20 @@ export const Select = forwardRef(({
       {label && (
         <label 
           htmlFor={inputId}
-          className="mb-2 block text-sm font-medium text-cd-text"
+          className="mb-2 block text-sm font-medium text-greenly-charcoal"
         >
           {label}
-          {required && <span className="ml-1 text-cd-error">*</span>}
+          {required && <span className="ml-1 text-greenly-alert">*</span>}
         </label>
       )}
       <select
         ref={ref}
         id={inputId}
         className={clsx(
-          'w-full px-4 py-2 border rounded-md',
-          'bg-white cursor-pointer',
-          'transition-all duration-150 ease-cd-ease',
-          'focus:outline-none focus:ring-2 focus:ring-offset-0',
-          error
-            ? 'border-cd-error focus:ring-cd-error'
-            : 'border-cd-border focus:ring-cd-desert focus:border-transparent',
-          'disabled:bg-cd-surface disabled:cursor-not-allowed disabled:opacity-60'
+          'input-base cursor-pointer pr-10 bg-white appearance-none',
+          'bg-[url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%23636E72\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")]',
+          'bg-[length:1.5em_1.5em] bg-[right_0.5rem_center] bg-no-repeat',
+          error && 'border-greenly-alert focus:ring-greenly-alert'
         )}
         aria-invalid={error ? 'true' : 'false'}
         aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
@@ -197,7 +212,7 @@ export const Select = forwardRef(({
       {error && (
         <p 
           id={`${inputId}-error`}
-          className="mt-2 text-sm text-cd-error"
+          className="mt-2 text-sm text-greenly-alert"
           role="alert"
         >
           {error}
@@ -206,7 +221,7 @@ export const Select = forwardRef(({
       {helperText && !error && (
         <p 
           id={`${inputId}-helper`}
-          className="mt-2 text-sm text-cd-muted"
+          className="mt-2 text-sm text-greenly-gray"
         >
           {helperText}
         </p>
@@ -236,23 +251,23 @@ export const Checkbox = forwardRef(({
         type="checkbox"
         id={inputId}
         className={clsx(
-          'mt-1 h-4 w-4 rounded border-cd-border',
-          'text-cd-midnight focus:ring-2 focus:ring-cd-desert',
-          'cursor-pointer',
-          'disabled:cursor-not-allowed disabled:opacity-60'
+          'mt-0.5 h-5 w-5 rounded border-greenly-light',
+          'text-greenly-primary focus:ring-2 focus:ring-greenly-primary focus:ring-offset-0',
+          'cursor-pointer transition-colors duration-[150ms]',
+          'disabled:cursor-not-allowed disabled:opacity-40'
         )}
         {...props}
       />
       {label && (
         <label 
           htmlFor={inputId}
-          className="ml-2 text-sm text-cd-text cursor-pointer select-none"
+          className="ml-3 text-sm text-greenly-charcoal cursor-pointer select-none"
         >
           {label}
         </label>
       )}
       {error && (
-        <p className="mt-1 text-sm text-cd-error" role="alert">
+        <p className="mt-1 text-sm text-greenly-alert" role="alert">
           {error}
         </p>
       )}
@@ -262,5 +277,49 @@ export const Checkbox = forwardRef(({
 
 Checkbox.displayName = 'Checkbox'
 
-export default Input
+/**
+ * Radio - Radio button input
+ */
+export const Radio = forwardRef(({ 
+  label,
+  error,
+  className = '',
+  id,
+  ...props 
+}, ref) => {
+  const inputId = id || `radio-${Math.random().toString(36).substr(2, 9)}`
+  
+  return (
+    <div className={clsx('flex items-start', className)}>
+      <input
+        ref={ref}
+        type="radio"
+        id={inputId}
+        className={clsx(
+          'mt-0.5 h-5 w-5 border-greenly-light',
+          'text-greenly-primary focus:ring-2 focus:ring-greenly-primary focus:ring-offset-0',
+          'cursor-pointer transition-colors duration-[150ms]',
+          'disabled:cursor-not-allowed disabled:opacity-40'
+        )}
+        {...props}
+      />
+      {label && (
+        <label 
+          htmlFor={inputId}
+          className="ml-3 text-sm text-greenly-charcoal cursor-pointer select-none"
+        >
+          {label}
+        </label>
+      )}
+      {error && (
+        <p className="mt-1 text-sm text-greenly-alert" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  )
+})
 
+Radio.displayName = 'Radio'
+
+export default Input

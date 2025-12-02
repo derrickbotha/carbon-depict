@@ -13,7 +13,6 @@ const Facility = require('./Facility')
 const GHGEmission = require('./GHGEmission')
 const ESGMetric = require('./ESGMetric')
 const GRIDisclosure = require('./GRIDisclosure')
-const Report = require('./Report')
 
 // Existing models
 const EmissionFactor = require('./EmissionFactor')
@@ -37,7 +36,6 @@ module.exports = {
   GHGEmission,
   ESGMetric,
   GRIDisclosure,
-  Report,
 
   // Data and factors
   EmissionFactor,

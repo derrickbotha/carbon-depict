@@ -20,7 +20,7 @@ const authenticate = async (req, res, next) => {
     const token = authHeader.substring(7) // Remove 'Bearer ' prefix
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key')
 
     if (!mongoose.Types.ObjectId.isValid(decoded.userId)) {
       return res.status(401).json({ error: 'Invalid token' })
@@ -55,8 +55,7 @@ const authenticate = async (req, res, next) => {
     // Attach user to request
     req.user = user
     req.userId = user.id
-    // Set companyId from decoded token first, then fallback to user object
-    req.companyId = decoded.companyId?.toString() || user.companyId?.toString() || user.company?._id?.toString()
+    req.companyId = user.companyId ? user.companyId.toString() : user.company?._id?.toString()
 
     // Update last login occasionally to avoid write amplification
     const now = Date.now()

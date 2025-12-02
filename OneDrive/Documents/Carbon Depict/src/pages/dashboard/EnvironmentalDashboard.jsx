@@ -1,205 +1,206 @@
 // Cache bust 2025-10-23
-import { Leaf, Droplets, Zap, Trash2, TreePine, TrendingDown } from '@atoms/Icon'
+import { useState, useEffect } from 'react'
+import {
+  Leaf,
+  Droplets,
+  Zap,
+  Trash2,
+  Recycle,
+  TrendingDown,
+  TrendingUp,
+  ChevronRight,
+} from 'lucide-react'
 
+// --- MOCK DATA & HOOK ---
+const useEnvironmentalData = () => {
+  const [loading, setLoading] = useState(true)
+  const [metrics, setMetrics] = useState(null)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMetrics({
+        totalEmissions: 38450,
+        emissionsChange: -12.3,
+        renewableEnergy: 45,
+        waterIntensity: 2.8,
+        wasteRecycled: 68,
+        biodiversityScore: 72,
+        emissionsBreakdown: { scope1: 32, scope2: 22, scope3: 46 },
+        energyMix: { renewable: 45, gas: 30, grid: 25 },
+        resourceTrends: {
+          water: { value: 45890, change: -8.5 },
+          waste: { value: 2340, change: -12 },
+          recycled: { value: 1590, change: 18 },
+        },
+      })
+      setLoading(false)
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [])
+
+  return { loading, metrics }
+}
+
+// --- MAIN COMPONENT ---
 export default function EnvironmentalDashboard() {
-  const metrics = {
-    totalEmissions: 38450,
-    emissionsChange: -12.3,
-    renewableEnergy: 45,
-    waterIntensity: 2.8,
-    wasteRecycled: 68,
-    biodiversityScore: 72
-  }
+  const { loading, metrics } = useEnvironmentalData()
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-cd-midnight">Environmental Performance</h1>
-        <p className="mt-2 text-cd-muted">
-          Track emissions, energy, water, waste, and biodiversity impacts
-        </p>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-        <div className="rounded-lg bg-white p-6 shadow-cd-sm">
-          <div className="flex items-center gap-3">
-            <Leaf className="h-8 w-8 text-green-600" strokeWidth={2} />
-            <div>
-              <p className="text-sm text-cd-muted">Total Emissions</p>
-              <p className="text-2xl font-bold">{metrics.totalEmissions.toLocaleString()}</p>
-              <p className="text-xs text-cd-muted">tCO2e</p>
-            </div>
-          </div>
+    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+      <Header />
+      <SummaryCards metrics={metrics} isLoading={loading} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-3 space-y-6">
+          <BreakdownChart
+            title="GHG Emissions by Scope"
+            data={metrics?.emissionsBreakdown}
+            isLoading={loading}
+            colors={{ scope1: 'bg-greenly-red', scope2: 'bg-greenly-yellow', scope3: 'bg-greenly-primary' }}
+            labels={{ scope1: 'Scope 1', scope2: 'Scope 2', scope3: 'Scope 3' }}
+          />
+          <BreakdownChart
+            title="Energy Mix"
+            data={metrics?.energyMix}
+            isLoading={loading}
+            colors={{ renewable: 'bg-greenly-primary', gas: 'bg-greenly-teal', grid: 'bg-greenly-slate' }}
+            labels={{ renewable: 'Renewable', gas: 'Natural Gas', grid: 'Grid' }}
+          />
         </div>
-        <div className="rounded-lg bg-white p-6 shadow-cd-sm">
-          <div className="flex items-center gap-3">
-            <TrendingDown className="h-8 w-8 text-blue-600" strokeWidth={2} />
-            <div>
-              <p className="text-sm text-cd-muted">YoY Change</p>
-              <p className="text-2xl font-bold text-green-600">{metrics.emissionsChange}%</p>
-            </div>
-          </div>
-        </div>
-        <div className="rounded-lg bg-white p-6 shadow-cd-sm">
-          <div className="flex items-center gap-3">
-            <Zap className="h-8 w-8 text-yellow-600" strokeWidth={2} />
-            <div>
-              <p className="text-sm text-cd-muted">Renewable Energy</p>
-              <p className="text-2xl font-bold">{metrics.renewableEnergy}%</p>
-            </div>
-          </div>
-        </div>
-        <div className="rounded-lg bg-white p-6 shadow-cd-sm">
-          <div className="flex items-center gap-3">
-            <Droplets className="h-8 w-8 text-cyan-600" strokeWidth={2} />
-            <div>
-              <p className="text-sm text-cd-muted">Water Intensity</p>
-              <p className="text-2xl font-bold">{metrics.waterIntensity}</p>
-              <p className="text-xs text-cd-muted">m³/unit</p>
-            </div>
-          </div>
-        </div>
-        <div className="rounded-lg bg-white p-6 shadow-cd-sm">
-          <div className="flex items-center gap-3">
-            <Trash2 className="h-8 w-8 text-orange-600" strokeWidth={2} />
-            <div>
-              <p className="text-sm text-cd-muted">Waste Recycled</p>
-              <p className="text-2xl font-bold">{metrics.wasteRecycled}%</p>
-            </div>
-          </div>
-        </div>
-        <div className="rounded-lg bg-white p-6 shadow-cd-sm">
-          <div className="flex items-center gap-3">
-            <TreePine className="h-8 w-8 text-emerald-600" strokeWidth={2} />
-            <div>
-              <p className="text-sm text-cd-muted">Biodiversity</p>
-              <p className="text-2xl font-bold">{metrics.biodiversityScore}/100</p>
-            </div>
-          </div>
+        <div className="lg:col-span-2 space-y-6">
+          <ResourceTrends trends={metrics?.resourceTrends} isLoading={loading} />
+          <CategoryList />
         </div>
       </div>
+    </div>
+  )
+}
 
-      {/* Emissions Breakdown */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-lg bg-white p-6 shadow-cd-sm">
-          <h2 className="text-lg font-semibold text-cd-midnight mb-4">GHG Emissions by Scope</h2>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-cd-muted">Scope 1 (Direct)</span>
-                <span className="font-medium">12,340 tCO2e (32%)</span>
-              </div>
-              <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-red-500" style={{ width: '32%' }} />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-cd-muted">Scope 2 (Energy)</span>
-                <span className="font-medium">8,560 tCO2e (22%)</span>
-              </div>
-              <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-orange-500" style={{ width: '22%' }} />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-cd-muted">Scope 3 (Value Chain)</span>
-                <span className="font-medium">17,550 tCO2e (46%)</span>
-              </div>
-              <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-yellow-500" style={{ width: '46%' }} />
-              </div>
-            </div>
+// --- SUB-COMPONENTS ---
+
+const Header = () => (
+  <div>
+    <h1 className="text-2xl font-bold text-greenly-charcoal sm:text-3xl">Environmental Performance</h1>
+    <p className="mt-1 text-sm text-greenly-slate sm:text-base">
+      Track emissions, energy, water, waste, and biodiversity impacts.
+    </p>
+  </div>
+)
+
+const SummaryCards = ({ metrics, isLoading }) => {
+  const summaryData = [
+    { title: 'Total Emissions', value: metrics?.totalEmissions, unit: 'tCO₂e', icon: Leaf, color: 'greenly-primary' },
+    { title: 'YoY Change', value: metrics?.emissionsChange, unit: '%', icon: TrendingDown, color: 'greenly-blue' },
+    { title: 'Renewable Energy', value: metrics?.renewableEnergy, unit: '%', icon: Zap, color: 'greenly-yellow' },
+    { title: 'Water Intensity', value: metrics?.waterIntensity, unit: 'm³/unit', icon: Droplets, color: 'greenly-cyan' },
+    { title: 'Waste Recycled', value: metrics?.wasteRecycled, unit: '%', icon: Trash2, color: 'greenly-orange' },
+    { title: 'Biodiversity Score', value: metrics?.biodiversityScore, unit: '/100', icon: Recycle, color: 'greenly-indigo' },
+  ]
+
+  return (
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+      {isLoading ? Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="card h-36 animate-pulse bg-gray-200"></div>
+      )) : summaryData.map((item, i) => (
+        <SummaryCard key={i} {...item} />
+      ))}
+    </div>
+  )
+}
+
+const SummaryCard = ({ title, value, unit, icon: Icon, color }) => (
+  <div className="card">
+    <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-${color}/10 text-${color} mb-3`}>
+      <Icon className="h-6 w-6" />
+    </div>
+    <p className="text-sm font-medium text-greenly-slate">{title}</p>
+    <p className="text-2xl font-bold text-greenly-charcoal">
+      {value?.toLocaleString()}
+      <span className="text-sm font-medium text-greenly-slate">{unit}</span>
+    </p>
+  </div>
+)
+
+const BreakdownChart = ({ title, data, isLoading, colors, labels }) => (
+  <div className="card p-6">
+    <h2 className="text-lg font-semibold text-greenly-charcoal mb-4">{title}</h2>
+    <div className="space-y-4">
+      {isLoading ? Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="space-y-2">
+          <div className="flex justify-between">
+            <div className="h-4 w-1/4 rounded bg-gray-200 animate-pulse"></div>
+            <div className="h-4 w-1/5 rounded bg-gray-200 animate-pulse"></div>
+          </div>
+          <div className="h-3 w-full rounded-full bg-gray-200 animate-pulse"></div>
+        </div>
+      )) : Object.entries(data).map(([key, value]) => (
+        <div key={key}>
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-greenly-slate">{labels[key]}</span>
+            <span className="font-medium text-greenly-charcoal">{value}%</span>
+          </div>
+          <div className="h-2 bg-greenly-light-gray rounded-full">
+            <div className={`h-2 ${colors[key]} rounded-full`} style={{ width: `${value}%` }} />
           </div>
         </div>
+      ))}
+    </div>
+  </div>
+)
 
-        <div className="rounded-lg bg-white p-6 shadow-cd-sm">
-          <h2 className="text-lg font-semibold text-cd-midnight mb-4">Energy Mix</h2>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-cd-muted">Renewable (Solar, Wind)</span>
-                <span className="font-medium">45%</span>
-              </div>
-              <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-green-600" style={{ width: '45%' }} />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-cd-muted">Natural Gas</span>
-                <span className="font-medium">30%</span>
-              </div>
-              <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500" style={{ width: '30%' }} />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-cd-muted">Grid Electricity</span>
-                <span className="font-medium">25%</span>
-              </div>
-              <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-gray-500" style={{ width: '25%' }} />
-              </div>
-            </div>
+const ResourceTrends = ({ trends, isLoading }) => {
+  const trendData = [
+    { title: 'Water Withdrawal', value: trends?.water.value, unit: 'm³', change: trends?.water.change, color: 'greenly-blue' },
+    { title: 'Waste Generated', value: trends?.waste.value, unit: 'tonnes', change: trends?.waste.change, color: 'greenly-orange' },
+    { title: 'Materials Recycled', value: trends?.recycled.value, unit: 'tonnes', change: trends?.recycled.change, color: 'greenly-primary' },
+  ]
+
+  return (
+    <div className="card p-6">
+      <h2 className="text-lg font-semibold text-greenly-charcoal mb-4">Resource Trends</h2>
+      <div className="space-y-4">
+        {isLoading ? Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="p-3 rounded-lg bg-gray-200 animate-pulse h-20"></div>
+        )) : trendData.map((item, i) => (
+          <div key={i} className={`p-3 rounded-lg bg-${item.color}/10 border-l-4 border-${item.color}`}>
+            <p className={`text-sm font-medium text-${item.color}`}>{item.title}</p>
+            <p className={`text-xl font-bold text-greenly-charcoal`}>
+              {item.value?.toLocaleString()} {item.unit}
+            </p>
+            <p className={`text-xs font-semibold flex items-center ${item.change >= 0 ? 'text-greenly-primary' : 'text-greenly-red'}`}>
+              {item.change >= 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+              {Math.abs(item.change)}% vs last year
+            </p>
           </div>
-        </div>
+        ))}
       </div>
+    </div>
+  )
+}
 
-      {/* Resource Consumption */}
-      <div className="rounded-lg bg-white p-6 shadow-cd-sm">
-        <h2 className="text-lg font-semibold text-cd-midnight mb-4">Resource Consumption Trends</h2>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-900 font-medium mb-2">Water Withdrawal</p>
-            <p className="text-2xl font-bold text-blue-600">45,890 m³</p>
-            <p className="text-xs text-blue-700 mt-1">↓ 8.5% vs last year</p>
-          </div>
-          <div className="p-4 bg-orange-50 rounded-lg">
-            <p className="text-sm text-orange-900 font-medium mb-2">Waste Generated</p>
-            <p className="text-2xl font-bold text-orange-600">2,340 tonnes</p>
-            <p className="text-xs text-orange-700 mt-1">↓ 12% vs last year</p>
-          </div>
-          <div className="p-4 bg-green-50 rounded-lg">
-            <p className="text-sm text-green-900 font-medium mb-2">Materials Recycled</p>
-            <p className="text-2xl font-bold text-green-600">1,590 tonnes</p>
-            <p className="text-xs text-green-700 mt-1">↑ 18% vs last year</p>
-          </div>
-        </div>
-      </div>
+const CategoryList = () => {
+  const categories = [
+    { title: 'Climate Action', items: ['GHG Inventory', 'Reduction Targets', 'Renewable Energy'] },
+    { title: 'Resource Management', items: ['Water Stewardship', 'Waste Reduction', 'Circular Economy'] },
+    { title: 'Nature & Biodiversity', items: ['Land Use', 'Habitat Protection', 'Pollution Prevention'] },
+  ]
 
-      {/* Categories */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="rounded-lg bg-white p-6 shadow-cd-sm">
-          <h3 className="font-semibold text-cd-midnight mb-3">Climate Action</h3>
-          <ul className="space-y-2 text-sm text-cd-muted">
-            <li>• GHG inventory (Scope 1/2/3)</li>
-            <li>• Carbon reduction targets</li>
-            <li>• Renewable energy transition</li>
-            <li>• Climate risk assessment</li>
-          </ul>
-        </div>
-        <div className="rounded-lg bg-white p-6 shadow-cd-sm">
-          <h3 className="font-semibold text-cd-midnight mb-3">Resource Management</h3>
-          <ul className="space-y-2 text-sm text-cd-muted">
-            <li>• Water stewardship</li>
-            <li>• Waste reduction</li>
-            <li>• Circular economy</li>
-            <li>• Material efficiency</li>
-          </ul>
-        </div>
-        <div className="rounded-lg bg-white p-6 shadow-cd-sm">
-          <h3 className="font-semibold text-cd-midnight mb-3">Nature & Biodiversity</h3>
-          <ul className="space-y-2 text-sm text-cd-muted">
-            <li>• Land use impacts</li>
-            <li>• Habitat protection</li>
-            <li>• Pollution prevention</li>
-            <li>• Ecosystem services</li>
-          </ul>
-        </div>
+  return (
+    <div className="card p-6">
+      <h2 className="text-lg font-semibold text-greenly-charcoal mb-4">Focus Areas</h2>
+      <div className="space-y-4">
+        {categories.map((cat, i) => (
+          <div key={i}>
+            <h3 className="font-semibold text-greenly-charcoal mb-2">{cat.title}</h3>
+            <ul className="space-y-1 text-sm text-greenly-slate">
+              {cat.items.map((item, j) => (
+                <li key={j} className="flex items-center hover:text-greenly-primary transition-colors cursor-pointer">
+                  <ChevronRight className="h-4 w-4 text-greenly-primary mr-1" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
     </div>
   )

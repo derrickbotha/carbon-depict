@@ -69,14 +69,10 @@ router.post('/', async (req, res) => {
       })
     }
 
-    // Get companyId from auth middleware
-    const companyId = req.companyId || req.user?.companyId || req.user?.company?._id || req.user?.company
-    const userId = req.user?._id || req.user?.id
-    
     // Create new metric
     const newMetric = new ESGMetric({
-      companyId: companyId,
-      userId: userId,
+      companyId: req.user.company,
+      userId: req.user.id,
       framework,
       pillar,
       topic,
@@ -124,19 +120,8 @@ router.get('/:id', async (req, res) => {
       })
     }
 
-    // Get companyId from auth middleware
-    const companyId = req.companyId || req.user?.companyId
-    
-    // Check access - ensure user can only view their company's metrics
-    const metricCompanyId = metric.companyId?._id?.toString() || metric.companyId?.toString() || metric.companyId
-    const userCompanyId = companyId || req.user?.company?._id?.toString() || req.user?.company?.toString()
-
-    if (metricCompanyId !== userCompanyId) {
-      console.error('Get metric access denied:', {
-        metricCompanyId,
-        userCompanyId,
-        reqCompanyId: companyId
-      })
+    // Check if user has access to this metric
+    if (metric.companyId._id.toString() !== req.user.company.toString()) {
       return res.status(403).json({
         success: false,
         error: 'Access denied'
@@ -167,32 +152,8 @@ router.put('/:id', async (req, res) => {
       })
     }
 
-    // Get companyId from auth middleware  
-    const companyId = req.companyId || req.user?.companyId
-    
-    // Check access - ensure user can only update their company's metrics
-    // Handle both populated and non-populated companyId
-    let metricCompanyId = metric.companyId
-    if (metricCompanyId && typeof metricCompanyId === 'object' && metricCompanyId._id) {
-      metricCompanyId = metricCompanyId._id.toString()
-    } else {
-      metricCompanyId = metricCompanyId?.toString() || metricCompanyId
-    }
-    
-    // Get user's companyId from various possible sources
-    const userCompanyId = companyId?.toString() || 
-                          req.user?.companyId?.toString() || 
-                          req.user?.company?._id?.toString() || 
-                          req.user?.company?.toString()
-
-    // Only check if both values are present
-    if (metricCompanyId && userCompanyId && metricCompanyId !== userCompanyId) {
-      console.error('Update metric access denied:', {
-        metricCompanyId,
-        userCompanyId,
-        reqCompanyId: companyId,
-        userId: req.user?._id
-      })
+    // Check access
+    if (metric.companyId.toString() !== req.user.company.toString()) {
       return res.status(403).json({
         success: false,
         error: 'Access denied'
@@ -227,19 +188,8 @@ router.delete('/:id', async (req, res) => {
       })
     }
 
-    // Get companyId from auth middleware
-    const companyId = req.companyId || req.user?.companyId
-    
-    // Check access - ensure user can only delete their company's metrics
-    const metricCompanyId = metric.companyId?.toString() || metric.companyId
-    const userCompanyId = companyId || req.user?.company?._id?.toString()
-
-    if (metricCompanyId !== userCompanyId) {
-      console.error('Delete metric access denied:', {
-        metricCompanyId,
-        userCompanyId,
-        reqCompanyId: companyId
-      })
+    // Check access
+    if (metric.companyId.toString() !== req.user.company.toString()) {
       return res.status(403).json({
         success: false,
         error: 'Access denied'
@@ -253,7 +203,6 @@ router.delete('/:id', async (req, res) => {
       message: 'Metric deleted successfully',
     })
   } catch (error) {
-    console.error('Error deleting metric:', error)
     res.status(500).json({ success: false, error: error.message })
   }
 })

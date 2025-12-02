@@ -3,7 +3,7 @@ import clsx from 'clsx'
 
 /**
  * Primary Button - Main CTAs
- * Follows CDDS design system with cd-midnight background
+ * Greenly Design System: Earth Green background, 40px height, prominent actions
  */
 export const PrimaryButton = ({ 
   children, 
@@ -11,6 +11,8 @@ export const PrimaryButton = ({
   disabled = false,
   type = 'button',
   className = '',
+  icon,
+  iconPosition = 'left',
   ...props 
 }) => {
   return (
@@ -19,24 +21,22 @@ export const PrimaryButton = ({
       onClick={onClick}
       disabled={disabled}
       className={clsx(
-        'bg-cd-midnight hover:bg-cd-cedar text-white',
-        'px-6 py-3 rounded-lg shadow-cd-md',
-        'transition-all duration-150 ease-cd-ease',
-        'focus:outline-none focus:ring-2 focus:ring-cd-desert focus:ring-offset-2',
-        'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-cd-midnight',
-        'font-medium text-base',
+        'btn-base btn-primary',
+        'inline-flex items-center justify-center gap-2',
         className
       )}
       {...props}
     >
+      {icon && iconPosition === 'left' && <span className="w-5 h-5">{icon}</span>}
       {children}
+      {icon && iconPosition === 'right' && <span className="w-5 h-5">{icon}</span>}
     </button>
   )
 }
 
 /**
  * Secondary Button - Lower priority actions
- * Uses cd-desert with border
+ * Greenly Design System: Charcoal border, transparent background
  */
 export const SecondaryButton = ({ 
   children, 
@@ -44,6 +44,8 @@ export const SecondaryButton = ({
   disabled = false,
   type = 'button',
   className = '',
+  icon,
+  iconPosition = 'left',
   ...props 
 }) => {
   return (
@@ -52,24 +54,22 @@ export const SecondaryButton = ({
       onClick={onClick}
       disabled={disabled}
       className={clsx(
-        'bg-cd-desert hover:bg-cd-cedar text-cd-midnight',
-        'px-6 py-3 rounded-lg border border-cd-border',
-        'transition-all duration-150 ease-cd-ease',
-        'focus:outline-none focus:ring-2 focus:ring-cd-desert focus:ring-offset-2',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
-        'font-medium text-base',
+        'btn-base btn-secondary',
+        'inline-flex items-center justify-center gap-2',
         className
       )}
       {...props}
     >
+      {icon && iconPosition === 'left' && <span className="w-5 h-5">{icon}</span>}
       {children}
+      {icon && iconPosition === 'right' && <span className="w-5 h-5">{icon}</span>}
     </button>
   )
 }
 
 /**
- * Outline Button - Tertiary actions
- * Transparent with border
+ * Outline Button / Ghost Button - Tertiary actions
+ * Greenly Design System: Minimal styling, hover state only
  */
 export const OutlineButton = ({ 
   children, 
@@ -77,6 +77,8 @@ export const OutlineButton = ({
   disabled = false,
   type = 'button',
   className = '',
+  icon,
+  iconPosition = 'left',
   ...props 
 }) => {
   return (
@@ -85,24 +87,27 @@ export const OutlineButton = ({
       onClick={onClick}
       disabled={disabled}
       className={clsx(
-        'bg-transparent hover:bg-cd-surface text-cd-midnight',
-        'px-6 py-3 rounded-lg border border-cd-border',
-        'transition-all duration-150 ease-cd-ease',
-        'focus:outline-none focus:ring-2 focus:ring-cd-desert focus:ring-offset-2',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
-        'font-medium text-base',
+        'btn-base btn-ghost',
+        'inline-flex items-center justify-center gap-2',
         className
       )}
       {...props}
     >
+      {icon && iconPosition === 'left' && <span className="w-5 h-5">{icon}</span>}
       {children}
+      {icon && iconPosition === 'right' && <span className="w-5 h-5">{icon}</span>}
     </button>
   )
 }
 
 /**
+ * Ghost Button - Alias for OutlineButton (design system naming)
+ */
+export const GhostButton = OutlineButton
+
+/**
  * Icon Button - For icon-only actions
- * Compact, square shape
+ * Greenly Design System: Compact, square 40px, minimal styling
  */
 export const IconButton = ({ 
   children, 
@@ -120,16 +125,18 @@ export const IconButton = ({
       disabled={disabled}
       aria-label={ariaLabel}
       className={clsx(
-        'bg-transparent hover:bg-cd-surface text-cd-midnight',
-        'p-2 rounded-md',
-        'transition-all duration-150 ease-cd-ease',
-        'focus:outline-none focus:ring-2 focus:ring-cd-desert focus:ring-offset-2',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
+        'inline-flex items-center justify-center',
+        'w-10 h-10 rounded-md',
+        'bg-transparent hover:bg-greenly-light',
+        'text-greenly-charcoal',
+        'transition-all duration-[250ms] ease-[cubic-bezier(0.4,0.0,0.2,1)]',
+        'focus:outline-none focus:ring-2 focus:ring-greenly-primary focus:ring-offset-2',
+        'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent',
         className
       )}
       {...props}
     >
-      {children}
+      <span className="w-5 h-5">{children}</span>
     </button>
   )
 }
@@ -146,9 +153,14 @@ export const LoadingButton = ({
   type = 'button',
   variant = 'primary',
   className = '',
+  icon,
+  iconPosition = 'left',
   ...props 
 }) => {
-  const ButtonComponent = variant === 'primary' ? PrimaryButton : SecondaryButton
+  const ButtonComponent = 
+    variant === 'primary' ? PrimaryButton : 
+    variant === 'secondary' ? SecondaryButton : 
+    GhostButton
 
   return (
     <ButtonComponent
@@ -156,12 +168,14 @@ export const LoadingButton = ({
       onClick={onClick}
       disabled={disabled || loading}
       className={clsx('relative', className)}
+      icon={!loading && icon}
+      iconPosition={iconPosition}
       {...props}
     >
       {loading && (
         <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <svg
-            className="h-5 w-5 animate-spin text-white"
+            className="h-5 w-5 animate-spin text-current"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -189,4 +203,3 @@ export const LoadingButton = ({
 
 // Default export for convenience
 export default PrimaryButton
-

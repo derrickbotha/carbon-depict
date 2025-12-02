@@ -1,6 +1,5 @@
-// Cache bust 2025-10-23
 import React, { useState, useMemo, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Save, 
@@ -12,53 +11,23 @@ import {
   Info,
   AlertCircle,
   Award,
-  X
-} from '@atoms/Icon';
-import FrameworkProgressBar from '../../components/molecules/FrameworkProgressBar';
-import useESGMetrics from '../../hooks/useESGMetrics';
+  X,
+  Building,
+  Briefcase,
+  Users2,
+  Globe,
+  Repeat,
+  HeartHandshake,
+  Landmark
+} from 'lucide-react';
 
-const EmployeeDemographicsCollection = () => {
-  const navigate = useNavigate();
-  const { createMetric, updateMetric, metrics, loading } = useESGMetrics({
-    topic: 'Employee Demographics',
-    pillar: 'Social'
-  });
-  
-  const [saveStatus, setSaveStatus] = useState('');
-  const [existingMetricId, setExistingMetricId] = useState(null);
+// --- DATA & HOOK ---
+
+const useEmployeeDemographics = () => {
   const [currentCategory, setCurrentCategory] = useState('workforce');
   const [showCalculations, setShowCalculations] = useState(false);
-  
-  // Calculation Functions
-  const calculateTurnoverRate = useCallback((departures, avgEmployees) => {
-    if (!avgEmployees || avgEmployees === 0) return 0;
-    return ((departures / avgEmployees) * 100).toFixed(2);
-  }, []);
-
-  const calculateGenderPayGap = useCallback((malePay, femalePay) => {
-    if (!malePay || malePay === 0) return 0;
-    return (((malePay - femalePay) / malePay) * 100).toFixed(2);
-  }, []);
-
-  const calculateCEOPayRatio = useCallback((ceoCompensation, medianEmployeeCompensation) => {
-    if (!medianEmployeeCompensation || medianEmployeeCompensation === 0) return '0:1';
-    const ratio = (ceoCompensation / medianEmployeeCompensation).toFixed(0);
-    return `${ratio}:1`;
-  }, []);
-
-  const categorizeWorkers = useCallback((totalEmployees, contractors) => {
-    return {
-      directEmployees: totalEmployees,
-      indirectWorkers: contractors,
-      total: totalEmployees + contractors,
-      employeePercentage: totalEmployees > 0 
-        ? ((totalEmployees / (totalEmployees + contractors)) * 100).toFixed(1) 
-        : 0
-    };
-  }, []);
 
   const [formData, setFormData] = useState({
-    // Total Workforce Composition
     workforce: {
       'total-employees': { name: 'Total Number of Employees', value: '', unit: 'number', completed: false, frameworks: ['GRI 2-7', 'CSRD S1-6'] },
       'permanent-employees': { name: 'Permanent Employees', value: '', unit: 'number', completed: false, frameworks: ['GRI 2-7', 'CSRD S1-6'] },
@@ -68,7 +37,6 @@ const EmployeeDemographicsCollection = () => {
       'contractors': { name: 'Contractors and Consultants', value: '', unit: 'number', completed: false, frameworks: ['GRI 2-8', 'CSRD S1-6'] },
       'non-guaranteed-hours': { name: 'Non-guaranteed Hours Workers', value: '', unit: 'number', completed: false, frameworks: ['GRI 2-7', 'CSRD S1-6'] },
     },
-    // Gender Diversity
     gender: {
       'male-employees': { name: 'Male Employees', value: '', unit: 'number', completed: false, frameworks: ['GRI 405-1', 'CSRD S1-9'] },
       'female-employees': { name: 'Female Employees', value: '', unit: 'number', completed: false, frameworks: ['GRI 405-1', 'CSRD S1-9'] },
@@ -80,7 +48,6 @@ const EmployeeDemographicsCollection = () => {
       'board-male': { name: 'Male Board Members', value: '', unit: 'number', completed: false, frameworks: ['GRI 405-1', 'CSRD S1-9'] },
       'board-female': { name: 'Female Board Members', value: '', unit: 'number', completed: false, frameworks: ['GRI 405-1', 'CSRD S1-9'] },
     },
-    // Age Diversity
     age: {
       'under-30': { name: 'Employees Under 30 Years', value: '', unit: 'number', completed: false, frameworks: ['GRI 405-1', 'CSRD S1-9'] },
       '30-50-years': { name: 'Employees 30-50 Years', value: '', unit: 'number', completed: false, frameworks: ['GRI 405-1', 'CSRD S1-9'] },
@@ -89,14 +56,12 @@ const EmployeeDemographicsCollection = () => {
       'management-30-50': { name: 'Management 30-50 Years', value: '', unit: 'number', completed: false, frameworks: ['GRI 405-1', 'CSRD S1-9'] },
       'management-over-50': { name: 'Management Over 50 Years', value: '', unit: 'number', completed: false, frameworks: ['GRI 405-1', 'CSRD S1-9'] },
     },
-    // Geographic Distribution
     geographic: {
       'employees-by-region': { name: 'Employees by Geographic Region', value: '', unit: 'text', completed: false, frameworks: ['GRI 2-7', 'CSRD S1-6'] },
       'employees-by-country': { name: 'Employees by Country (Top 5)', value: '', unit: 'text', completed: false, frameworks: ['GRI 2-7', 'CSRD S1-6'] },
       'headquarters-location': { name: 'Number of Employees at Headquarters', value: '', unit: 'number', completed: false, frameworks: ['GRI 2-7'] },
       'remote-workers': { name: 'Remote/Hybrid Workers', value: '', unit: 'number', completed: false, frameworks: ['CSRD S1-6'] },
     },
-    // New Hires & Turnover
     turnover: {
       'new-hires-total': { name: 'Total New Hires', value: '', unit: 'number', completed: false, frameworks: ['GRI 401-1', 'CSRD S1-6'] },
       'new-hires-male': { name: 'New Hires - Male', value: '', unit: 'number', completed: false, frameworks: ['GRI 401-1', 'CSRD S1-6'] },
@@ -109,7 +74,6 @@ const EmployeeDemographicsCollection = () => {
       'turnover-involuntary': { name: 'Involuntary Turnover', value: '', unit: 'number', completed: false, frameworks: ['GRI 401-1', 'CSRD S1-6'] },
       'turnover-rate': { name: 'Turnover Rate (%)', value: '', unit: '%', completed: false, frameworks: ['GRI 401-1', 'CSRD S1-6'] },
     },
-    // Diversity & Inclusion
     diversity: {
       'ethnic-minorities': { name: 'Employees from Ethnic Minorities', value: '', unit: 'number', completed: false, frameworks: ['GRI 405-1', 'CSRD S1-9'] },
       'persons-with-disabilities': { name: 'Employees with Disabilities', value: '', unit: 'number', completed: false, frameworks: ['GRI 405-1', 'CSRD S1-9'] },
@@ -118,7 +82,6 @@ const EmployeeDemographicsCollection = () => {
       'diversity-policy': { name: 'Diversity & Inclusion Policy', value: '', unit: 'text', completed: false, frameworks: ['GRI 405-1', 'CSRD S1-9'] },
       'diversity-targets': { name: 'Diversity Targets Set', value: '', unit: 'text', completed: false, frameworks: ['CSRD S1-9'] },
     },
-    // Pay & Compensation
     compensation: {
       'pay-gap-gender': { name: 'Gender Pay Gap (%)', value: '', unit: '%', completed: false, frameworks: ['GRI 405-2', 'CSRD S1-13'] },
       'pay-ratio-ceo': { name: 'CEO to Median Employee Pay Ratio', value: '', unit: 'ratio', completed: false, frameworks: ['GRI 2-21', 'CSRD S1-13'] },
@@ -127,105 +90,6 @@ const EmployeeDemographicsCollection = () => {
       'pension-coverage': { name: 'Employees with Pension Coverage (%)', value: '', unit: '%', completed: false, frameworks: ['GRI 401-2', 'CSRD S1-11'] },
     },
   });
-
-  // Calculate total progress percentage
-  const totalProgress = useMemo(() => {
-    let totalFields = 0;
-    let completedFields = 0;
-    
-    Object.values(formData).forEach(category => {
-      Object.values(category).forEach(field => {
-        totalFields++;
-        if (field.completed) completedFields++;
-      });
-    });
-    
-    return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
-  }, [formData]);
-
-  const handleSave = useCallback(async () => {
-    setSaveStatus('saving');
-    try {
-      const totalEmployees = parseFloat(formData.workforce['total-employees']?.value) || 0;
-      
-      const metricData = {
-        framework: 'GRI,CSRD',
-        pillar: 'Social',
-        topic: 'Employee Demographics',
-        metricName: 'Employee Demographics Data',
-        reportingPeriod: new Date().getFullYear().toString(),
-        value: totalEmployees,
-        unit: 'number',
-        dataQuality: 'measured',
-        metadata: {
-          formData: formData,
-          completionPercentage: totalProgress,
-          lastUpdated: new Date().toISOString()
-        }
-      };
-      
-      if (existingMetricId) {
-        await updateMetric(existingMetricId, metricData);
-      } else {
-        const newMetric = await createMetric(metricData);
-        setExistingMetricId(newMetric._id);
-      }
-      
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus(''), 3000);
-    } catch (error) {
-      console.error('Error saving Employee Demographics data:', error);
-      setSaveStatus('error');
-      setTimeout(() => setSaveStatus(''), 3000);
-    }
-  }, [formData, totalProgress, existingMetricId, createMetric, updateMetric]);
-
-  const handleSubmit = useCallback(async () => {
-    if (totalProgress < 100) {
-      alert('Please complete all fields before submitting.');
-      return;
-    }
-    
-    setSaveStatus('submitting');
-    try {
-      const totalEmployees = parseFloat(formData.workforce['total-employees']?.value) || 0;
-      
-      const metricData = {
-        framework: 'GRI,CSRD',
-        pillar: 'Social',
-        topic: 'Employee Demographics',
-        metricName: 'Employee Demographics Data',
-        reportingPeriod: new Date().getFullYear().toString(),
-        value: totalEmployees,
-        unit: 'number',
-        dataQuality: 'measured',
-        status: 'published',
-        isDraft: false,
-        metadata: {
-          formData: formData,
-          completionPercentage: 100,
-          submittedAt: new Date().toISOString()
-        }
-      };
-      
-      if (existingMetricId) {
-        await updateMetric(existingMetricId, metricData);
-      } else {
-        await createMetric(metricData);
-      }
-      
-      setSaveStatus('submitted');
-      alert('Employee Demographics data submitted successfully and saved to database!');
-      setTimeout(() => {
-        navigate('/dashboard/esg/data-entry');
-      }, 1500);
-    } catch (error) {
-      console.error('Error submitting Employee Demographics data:', error);
-      setSaveStatus('error');
-      alert('Error submitting data. Please try again.');
-      setTimeout(() => setSaveStatus(''), 3000);
-    }
-  }, [totalProgress, formData, existingMetricId, createMetric, updateMetric, navigate]);
 
   const handleInputChange = useCallback((category, fieldKey, value) => {
     setFormData((prev) => ({
@@ -247,584 +111,377 @@ const EmployeeDemographicsCollection = () => {
     return fields.length > 0 ? Math.round((completedFields / fields.length) * 100) : 0;
   }, [formData]);
 
+  const totalProgress = useMemo(() => {
+    let totalFields = 0;
+    let completedFields = 0;
+    Object.values(formData).forEach((category) => {
+      const fields = Object.values(category);
+      totalFields += fields.length;
+      completedFields += fields.filter((f) => f.completed).length;
+    });
+    return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
+  }, [formData]);
+
   const categories = [
-    {
-      id: 'workforce',
-      name: 'Workforce Composition',
-      description: 'Total employees by contract type',
-      icon: '👥',
-      fields: 7,
-    },
-    {
-      id: 'gender',
-      name: 'Gender Diversity',
-      description: 'Gender breakdown across all levels',
-      icon: '⚖️',
-      fields: 9,
-    },
-    {
-      id: 'age',
-      name: 'Age Diversity',
-      description: 'Age distribution of workforce',
-      icon: '📊',
-      fields: 6,
-    },
-    {
-      id: 'geographic',
-      name: 'Geographic Distribution',
-      description: 'Employee locations and regions',
-      icon: '🌍',
-      fields: 4,
-    },
-    {
-      id: 'turnover',
-      name: 'New Hires & Turnover',
-      description: 'Hiring and retention metrics',
-      icon: '🔄',
-      fields: 10,
-    },
-    {
-      id: 'diversity',
-      name: 'Diversity & Inclusion',
-      description: 'Additional diversity metrics',
-      icon: '🤝',
-      fields: 6,
-    },
-    {
-      id: 'compensation',
-      name: 'Pay & Compensation',
-      description: 'Pay equity and benefits',
-      icon: '💰',
-      fields: 5,
-    },
+    { id: 'workforce', name: 'Workforce', icon: Briefcase, fields: 7 },
+    { id: 'gender', name: 'Gender', icon: Users2, fields: 9 },
+    { id: 'age', name: 'Age', icon: TrendingUp, fields: 6 },
+    { id: 'geographic', name: 'Geography', icon: Globe, fields: 4 },
+    { id: 'turnover', name: 'Turnover', icon: Repeat, fields: 10 },
+    { id: 'diversity', name: 'D&I', icon: HeartHandshake, fields: 6 },
+    { id: 'compensation', name: 'Compensation', icon: Landmark, fields: 5 },
   ];
 
   const currentCategoryData = categories.find((cat) => cat.id === currentCategory);
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <Link
-                to="/dashboard/esg/data-entry"
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft strokeWidth={2} />
-              </Link>
-              <div>
-                <div className="mb-1 flex items-center gap-2">
-                  <User strokeWidth={2} />
-                  <span className="text-sm font-semibold text-blue-600">EMPLOYEE DEMOGRAPHICS</span>
-                </div>
-                <h1 className="text-3xl font-bold text-cd-text">Employee Demographics Data Collection</h1>
-                <p className="text-cd-muted">
-                  Data for GRI 2-7, 405-1, 401-1 and CSRD S1 (Own Workforce)
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                <Download strokeWidth={2} />
-                Export Data
-              </button>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2">
-                <Save strokeWidth={2} />
-                Save Progress
-              </button>
-            </div>
-          </div>
+  const calculationResults = useMemo(() => {
+    const workforce = formData.workforce;
+    const turnover = formData.turnover;
+    const compensation = formData.compensation;
+    const gender = formData.gender;
 
-          {/* Progress Bar */}
-          <FrameworkProgressBar
-            framework="Employee Demographics"
-            completionPercentage={totalProgress}
-            totalFields={Object.values(formData).reduce((sum, cat) => sum + Object.keys(cat).length, 0)}
-            completedFields={Object.values(formData).reduce((sum, cat) => sum + Object.values(cat).filter(f => f.completed).length, 0)}
-            showDetails={true}
-          />
+    const totalEmp = parseFloat(workforce['total-employees'].value) || 0;
+    const contractors = parseFloat(workforce['contractors'].value) || 0;
+    const totalWorkforce = totalEmp + contractors;
+
+    const departures = parseFloat(turnover['turnover-total'].value) || 0;
+    const turnoverRate = totalEmp > 0 ? ((departures / totalEmp) * 100).toFixed(1) : 0;
+
+    const male = parseFloat(gender['male-employees'].value) || 0;
+    const female = parseFloat(gender['female-employees'].value) || 0;
+    const nonBinary = parseFloat(gender['non-binary-employees'].value) || 0;
+    const totalGender = male + female + nonBinary;
+
+    return {
+      workerCategorization: {
+        direct: totalEmp,
+        indirect: contractors,
+        total: totalWorkforce,
+        employeePercentage: totalWorkforce > 0 ? ((totalEmp / totalWorkforce) * 100).toFixed(1) : 0,
+      },
+      turnover: {
+        departures,
+        avgEmployees: totalEmp,
+        rate: turnoverRate,
+      },
+      payGap: {
+        gap: compensation['pay-gap-gender'].value,
+      },
+      ceoRatio: {
+        ratio: compensation['pay-ratio-ceo'].value,
+      },
+      genderDistribution: {
+        male,
+        female,
+        nonBinary,
+        total: totalGender,
+        malePercent: totalGender > 0 ? ((male / totalGender) * 100).toFixed(1) : 0,
+        femalePercent: totalGender > 0 ? ((female / totalGender) * 100).toFixed(1) : 0,
+        nonBinaryPercent: totalGender > 0 ? ((nonBinary / totalGender) * 100).toFixed(1) : 0,
+      },
+    };
+  }, [formData]);
+
+  return {
+    currentCategory,
+    setCurrentCategory,
+    showCalculations,
+    setShowCalculations,
+    formData,
+    handleInputChange,
+    calculateCategoryProgress,
+    totalProgress,
+    categories,
+    currentCategoryData,
+    calculationResults,
+  };
+};
+
+// --- SUB-COMPONENTS ---
+
+const Header = ({ totalProgress }) => (
+  <div className="border-b border-greenly-light-gray bg-white">
+    <div className="p-4 sm:p-6">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-3">
+          <Link to="/dashboard/esg/data-entry" className="btn-icon">
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <div>
+            <div className="mb-1 flex items-center gap-2">
+              <Users className="h-5 w-5 text-greenly-primary" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-greenly-primary">Employee Demographics</span>
+            </div>
+            <h1 className="text-2xl font-bold text-greenly-charcoal">Demographics Data Collection</h1>
+            <p className="text-sm text-greenly-slate">Data for GRI 2-7, 405-1, 401-1 and CSRD S1 (Own Workforce)</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button className="btn-secondary"><Download className="h-4 w-4" /> Export</button>
+          <button className="btn-primary"><Save className="h-4 w-4" /> Save</button>
         </div>
       </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Framework Tags */}
-        <div className="mb-6 flex flex-wrap gap-2">
-          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">GRI 2-7: Employees</span>
-          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">GRI 405-1: Diversity</span>
-          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">GRI 401-1: New Hires</span>
-          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">CSRD S1-6: Own Workforce</span>
-          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">CSRD S1-9: Diversity</span>
+      <div className="mt-4">
+        <div className="mb-2 flex justify-between text-sm">
+          <span className="font-semibold text-greenly-charcoal">Overall Progress</span>
+          <span className="font-bold text-greenly-primary">{totalProgress}%</span>
         </div>
+        <div className="h-2 w-full rounded-full bg-greenly-light-gray">
+          <div className="h-2 rounded-full bg-greenly-primary transition-all" style={{ width: `${totalProgress}%` }} />
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-          {/* Sidebar - Category Navigation */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-6 space-y-3">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-cd-muted">
-                Categories
-              </h3>
-              {categories.map((cat) => {
-                const progress = calculateCategoryProgress(cat.id);
-                const isActive = currentCategory === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => setCurrentCategory(cat.id)}
-                    className={`w-full rounded-lg border p-4 text-left transition-all ${
-                      isActive
-                        ? 'border-blue-600 bg-blue-600 text-white shadow-lg'
-                        : 'border-cd-border bg-white text-cd-text hover:border-blue-300 hover:shadow-md'
-                    }`}
-                  >
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="text-2xl">{cat.icon}</span>
-                      <span className={`text-sm font-semibold ${isActive ? 'text-white' : 'text-blue-600'}`}>
-                        {progress}%
-                      </span>
-                    </div>
-                    <div className={`mb-1 font-semibold ${isActive ? 'text-white' : 'text-cd-text'}`}>
-                      {cat.name}
-                    </div>
-                    <div className={`text-xs ${isActive ? 'text-white/80' : 'text-cd-muted'}`}>
-                      {cat.fields} fields
-                    </div>
-                    <div className="mt-2 h-1 w-full rounded-full bg-white/20">
-                      <div
-                        className={`h-1 rounded-full ${isActive ? 'bg-white' : 'bg-blue-600'}`}
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                  </button>
-                );
-              })}
+const FrameworkTags = () => (
+  <div className="flex flex-wrap gap-2">
+    <span className="status-badge-blue">GRI 2-7: Employees</span>
+    <span className="status-badge-blue">GRI 405-1: Diversity</span>
+    <span className="status-badge-blue">GRI 401-1: New Hires</span>
+    <span className="status-badge-green">CSRD S1-6: Own Workforce</span>
+    <span className="status-badge-green">CSRD S1-9: Diversity</span>
+  </div>
+);
+
+const Sidebar = ({ categories, currentCategory, setCurrentCategory, calculateCategoryProgress }) => (
+  <div className="sticky top-6 space-y-2">
+    <h3 className="input-label px-2">Categories</h3>
+    {categories.map((cat) => {
+      const progress = calculateCategoryProgress(cat.id);
+      const isActive = currentCategory === cat.id;
+      return (
+        <button
+          key={cat.id}
+          onClick={() => setCurrentCategory(cat.id)}
+          className={`w-full rounded-lg p-3 text-left transition-all ${
+            isActive ? 'bg-greenly-primary text-white' : 'bg-white text-greenly-charcoal hover:bg-greenly-off-white'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <cat.icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-greenly-primary'}`} />
+              <span className="font-semibold">{cat.name}</span>
+            </div>
+            <span className={`text-xs font-semibold ${isActive ? 'text-white' : 'text-greenly-slate'}`}>
+              {progress}%
+            </span>
+          </div>
+          <div className="mt-2 h-1 w-full rounded-full bg-black/10">
+            <div className={`h-1 rounded-full ${isActive ? 'bg-white' : 'bg-greenly-primary'}`} style={{ width: `${progress}%` }} />
+          </div>
+        </button>
+      );
+    })}
+  </div>
+);
+
+const DataCollectionForm = ({ category, formData, handleInputChange }) => (
+  <div className="card p-6">
+    <div className="mb-6 border-b border-greenly-light-gray pb-4">
+      <div className="flex items-center gap-3">
+        <category.icon className="h-7 w-7 text-greenly-primary" />
+        <div>
+          <h2 className="text-xl font-bold text-greenly-charcoal">{category.name}</h2>
+          <p className="text-sm text-greenly-slate">Enter your organization's workforce data for the reporting period.</p>
+        </div>
+      </div>
+    </div>
+    <div className="space-y-5">
+      {Object.entries(formData[category.id]).map(([fieldKey, field]) => (
+        <div key={fieldKey} className="flex items-start gap-4">
+          <div className="mt-1.5 flex-shrink-0">
+            {field.completed ? <CheckCircle2 className="h-5 w-5 text-greenly-primary" /> : <Circle className="h-5 w-5 text-gray-300" />}
+          </div>
+          <div className="flex-1">
+            <label className="input-label">{field.name}</label>
+            <div className="mb-2 flex flex-wrap gap-1">
+              {field.frameworks.map(fw => (
+                <span key={fw} className="status-badge-gray text-xs">{fw}</span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              {field.unit === 'text' ? (
+                <textarea
+                  value={field.value}
+                  onChange={(e) => handleInputChange(category.id, fieldKey, e.target.value)}
+                  className="input-base"
+                  placeholder="Enter description or details"
+                  rows={3}
+                />
+              ) : (
+                <>
+                  <input
+                    type={field.unit === 'number' ? 'number' : 'text'}
+                    step={field.unit === '%' ? '0.01' : '1'}
+                    min="0"
+                    value={field.value}
+                    onChange={(e) => handleInputChange(category.id, fieldKey, e.target.value)}
+                    className="input-base"
+                    placeholder={`Enter ${field.unit === 'ratio' ? 'ratio (e.g., 100:1)' : field.unit}`}
+                  />
+                  <div className="flex w-24 items-center justify-center rounded-md border border-greenly-light-gray bg-greenly-off-white px-3 text-sm text-greenly-slate">
+                    {field.unit}
+                  </div>
+                </>
+              )}
             </div>
           </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
-          {/* Main Form */}
+const GuidancePanel = ({ categoryId }) => {
+  const guidance = {
+    workforce: [
+      "GRI 2-7: Report total employees by employment contract (permanent/temporary) and type (full-time/part-time).",
+      "CSRD S1-6: Total number of employees at the end of the reporting period.",
+      "Include all direct employees; contractors reported separately under GRI 2-8.",
+    ],
+    gender: [
+      "GRI 405-1: Report diversity of governance bodies and employees by gender and age group.",
+      "CSRD S1-9: Gender distribution across workforce, including management and governance.",
+      "Break down by employee category: board, senior executives, management, and all employees.",
+    ],
+    turnover: [
+        "GRI 401-1: Total new hires and employee turnover by age group, gender, and region.",
+        "CSRD S1-6: Number and rate of employee turnover in the reporting period.",
+        "Turnover rate = (Number of departures / Average number of employees) × 100.",
+    ],
+    compensation: [
+        "GRI 405-2: Ratio of basic salary and remuneration of women to men.",
+        "CSRD S1-13: Gender pay gap (unadjusted and adjusted).",
+        "CEO pay ratio = Total CEO compensation / Median employee compensation.",
+    ]
+  };
+
+  if (!guidance[categoryId]) return null;
+
+  return (
+    <div className="mt-6 rounded-lg border border-greenly-light-gray bg-greenly-off-white p-4">
+      <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-greenly-charcoal">
+        <Info className="h-4 w-4" />
+        Guidance
+      </div>
+      <ul className="space-y-1 pl-4 text-xs text-greenly-slate list-disc">
+        {guidance[categoryId].map((item, i) => <li key={i}>{item}</li>)}
+      </ul>
+    </div>
+  );
+};
+
+const CalculationSummary = ({ results, onClose }) => (
+  <div className="card mt-6 p-6 border-2 border-greenly-primary bg-greenly-primary/5">
+    <div className="mb-4 flex items-center justify-between border-b border-greenly-primary/20 pb-3">
+      <div className="flex items-center gap-2">
+        <Award className="h-6 w-6 text-greenly-primary" />
+        <h3 className="text-lg font-bold text-greenly-charcoal">Automated Calculations Summary</h3>
+      </div>
+      <button onClick={onClose} className="btn-icon"><X className="h-5 w-5" /></button>
+    </div>
+    <div className="grid gap-4 md:grid-cols-2">
+      <CalcCard title="Worker Categorization" icon={Users}>
+        <CalcRow label="Direct Employees" value={results.workerCategorization.direct} />
+        <CalcRow label="Contractors" value={results.workerCategorization.indirect} />
+        <CalcRow label="Total Workforce" value={results.workerCategorization.total} isTotal />
+        <div className="mt-2 text-xs text-greenly-slate bg-greenly-off-white p-2 rounded">
+          Employee % = {results.workerCategorization.employeePercentage}% of total workforce
+        </div>
+      </CalcCard>
+      <CalcCard title="Turnover Rate" icon={Repeat}>
+        <CalcRow label="Departures" value={results.turnover.departures} />
+        <CalcRow label="Avg Employees" value={results.turnover.avgEmployees} />
+        <CalcRow label="Turnover Rate" value={`${results.turnover.rate}%`} isTotal />
+      </CalcCard>
+      <CalcCard title="Gender Pay Gap" icon={Users2}>
+        <CalcRow label="Pay Gap" value={`${results.payGap.gap || 0}%`} isTotal />
+        <div className="mt-2 text-xs text-greenly-slate">
+          {parseFloat(results.payGap.gap) < 5 ? '✅ Excellent' : '⚠️ Moderate gap'}
+        </div>
+      </CalcCard>
+      <CalcCard title="CEO Pay Ratio" icon={Landmark}>
+        <CalcRow label="Ratio" value={results.ceoRatio.ratio || 'N/A'} isTotal />
+      </CalcCard>
+      <CalcCard title="Gender Distribution" icon={HeartHandshake}>
+        <CalcRow label="Male" value={`${results.genderDistribution.male} (${results.genderDistribution.malePercent}%)`} />
+        <CalcRow label="Female" value={`${results.genderDistribution.female} (${results.genderDistribution.femalePercent}%)`} />
+        {results.genderDistribution.nonBinary > 0 && <CalcRow label="Non-binary" value={`${results.genderDistribution.nonBinary} (${results.genderDistribution.nonBinaryPercent}%)`} />}
+      </CalcCard>
+    </div>
+  </div>
+);
+
+const CalcCard = ({ title, icon: Icon, children }) => (
+  <div className="rounded-lg bg-white p-4 shadow-sm border border-greenly-light-gray">
+    <h4 className="mb-3 flex items-center gap-2 font-semibold text-greenly-charcoal">
+      <Icon className="h-4 w-4 text-greenly-primary" /> {title}
+    </h4>
+    <div className="space-y-2 text-sm">{children}</div>
+  </div>
+);
+
+const CalcRow = ({ label, value, isTotal = false }) => (
+  <div className={`flex justify-between ${isTotal ? 'border-t border-greenly-light-gray pt-2' : ''}`}>
+    <span className={isTotal ? 'font-semibold' : 'text-greenly-slate'}>{label}:</span>
+    <span className={`font-semibold ${isTotal ? 'text-lg text-greenly-primary' : ''}`}>{value}</span>
+  </div>
+);
+
+// --- MAIN COMPONENT ---
+export default function EmployeeDemographicsCollection() {
+  const {
+    currentCategory,
+    setCurrentCategory,
+    showCalculations,
+    setShowCalculations,
+    formData,
+    handleInputChange,
+    calculateCategoryProgress,
+    totalProgress,
+    categories,
+    currentCategoryData,
+    calculationResults,
+  } = useEmployeeDemographics();
+
+  return (
+    <div className="min-h-screen bg-greenly-off-white">
+      <Header totalProgress={totalProgress} />
+      <div className="p-4 sm:p-6 lg:p-8">
+        <div className="mb-6">
+          <FrameworkTags />
+        </div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+          <div className="lg:col-span-1">
+            <Sidebar
+              categories={categories}
+              currentCategory={currentCategory}
+              setCurrentCategory={setCurrentCategory}
+              calculateCategoryProgress={calculateCategoryProgress}
+            />
+          </div>
           <div className="lg:col-span-3">
-            <div className="rounded-lg border border-cd-border bg-white p-6 shadow-cd-sm">
-              {/* Category Header */}
-              <div className="mb-6 border-b border-cd-border pb-4">
-                <div className="mb-2 flex items-center gap-3">
-                  <span className="text-3xl">{currentCategoryData.icon}</span>
-                  <div>
-                    <h2 className="text-2xl font-bold text-cd-text">{currentCategoryData.name}</h2>
-                    <p className="text-sm text-cd-muted">{currentCategoryData.description}</p>
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-2 text-sm text-cd-muted">
-                  <Alert strokeWidth={2} />
-                  <span>Enter your organization's workforce data for the reporting period</span>
-                </div>
-              </div>
-
-              {/* Form Fields */}
-              <div className="space-y-4">
-                {Object.entries(formData[currentCategory]).map(([fieldKey, field]) => (
-                  <div key={fieldKey} className="flex items-start gap-4">
-                    <div className="flex-shrink-0 mt-2">
-                      {field.completed ? (
-                        <Check strokeWidth={2} />
-                      ) : (
-                        <Circle className="h-5 w-5 text-gray-300" strokeWidth={2} />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <label className="mb-1 block text-sm font-medium text-cd-text">
-                        {field.name}
-                      </label>
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {field.frameworks.map(fw => (
-                          <span key={fw} className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs font-medium">
-                            {fw}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        {field.unit === 'text' ? (
-                          <textarea
-                            value={field.value}
-                            onChange={(e) => handleInputChange(currentCategory, fieldKey, e.target.value)}
-                            className="flex-1 rounded-lg border border-cd-border bg-white px-4 py-2 text-cd-text placeholder-cd-muted/50 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
-                            placeholder="Enter description or details"
-                            rows={3}
-                          />
-                        ) : (
-                          <>
-                            <input
-                              type={field.unit === 'number' ? 'number' : 'text'}
-                              step={field.unit === '%' ? '0.01' : '1'}
-                              min="0"
-                              value={field.value}
-                              onChange={(e) => handleInputChange(currentCategory, fieldKey, e.target.value)}
-                              className="flex-1 rounded-lg border border-cd-border bg-white px-4 py-2 text-cd-text placeholder-cd-muted/50 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
-                              placeholder={`Enter ${field.unit === 'ratio' ? 'ratio (e.g., 100:1)' : field.unit}`}
-                            />
-                            <div className="flex w-24 items-center justify-center rounded-lg border border-cd-border bg-cd-surface px-3 text-sm text-cd-muted">
-                              {field.unit === 'ratio' ? 'ratio' : field.unit}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Automated Calculations Section */}
-              {currentCategory === 'workforce' && formData.workforce['total-employees'].value && formData.workforce['contractors'].value && (
-                <div className="mt-6 rounded-lg border border-green-200 bg-green-50 p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-green-900">
-                      <Award className="h-4 w-4" strokeWidth={2} />
-                      Automated Worker Categorization
-                    </div>
-                  </div>
-                  {(() => {
-                    const totalEmp = parseFloat(formData.workforce['total-employees'].value) || 0;
-                    const contractors = parseFloat(formData.workforce['contractors'].value) || 0;
-                    const result = categorizeWorkers(totalEmp, contractors);
-                    return (
-                      <div className="space-y-2 text-sm text-green-800">
-                        <div className="flex justify-between">
-                          <span>Direct Employees (GRI 2-7):</span>
-                          <span className="font-semibold">{result.directEmployees}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Indirect Workers (GRI 2-8):</span>
-                          <span className="font-semibold">{result.indirectWorkers}</span>
-                        </div>
-                        <div className="flex justify-between border-t border-green-300 pt-2">
-                          <span className="font-semibold">Total Workforce:</span>
-                          <span className="font-semibold">{result.total}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Employee Percentage:</span>
-                          <span className="font-semibold">{result.employeePercentage}%</span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-
-              {currentCategory === 'turnover' && formData.turnover['turnover-total'].value && formData.workforce['total-employees'].value && (
-                <div className="mt-6 rounded-lg border border-green-200 bg-green-50 p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-green-900">
-                      <Award className="h-4 w-4" strokeWidth={2} />
-                      Automated Turnover Rate Calculation
-                    </div>
-                  </div>
-                  {(() => {
-                    const departures = parseFloat(formData.turnover['turnover-total'].value) || 0;
-                    const avgEmployees = parseFloat(formData.workforce['total-employees'].value) || 0;
-                    const rate = calculateTurnoverRate(departures, avgEmployees);
-                    return (
-                      <div className="space-y-2 text-sm text-green-800">
-                        <div className="flex justify-between">
-                          <span>Total Departures:</span>
-                          <span className="font-semibold">{departures}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Average Employees:</span>
-                          <span className="font-semibold">{avgEmployees}</span>
-                        </div>
-                        <div className="flex justify-between border-t border-green-300 pt-2">
-                          <span className="font-semibold">Turnover Rate:</span>
-                          <span className="font-semibold text-lg">{rate}%</span>
-                        </div>
-                        <div className="mt-2 text-xs text-green-700 bg-green-100 p-2 rounded">
-                          <strong>Formula:</strong> (Departures ÷ Average Employees) × 100 = ({departures} ÷ {avgEmployees}) × 100 = {rate}%
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-
-              {currentCategory === 'compensation' && formData.compensation['pay-gap-gender'].value && (
-                <div className="mt-6 rounded-lg border border-green-200 bg-green-50 p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-green-900">
-                      <Award className="h-4 w-4" strokeWidth={2} />
-                      Pay Equity Analysis
-                    </div>
-                  </div>
-                  <div className="space-y-3 text-sm text-green-800">
-                    {formData.compensation['pay-gap-gender'].value && (
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span>Gender Pay Gap:</span>
-                          <span className="font-semibold text-lg">{formData.compensation['pay-gap-gender'].value}%</span>
-                        </div>
-                        <div className="text-xs text-green-700 bg-green-100 p-2 rounded">
-                          <strong>Formula:</strong> ((Male Median Pay - Female Median Pay) ÷ Male Median Pay) × 100
-                        </div>
-                      </div>
-                    )}
-                    {formData.compensation['pay-ratio-ceo'].value && (
-                      <div className="mt-3">
-                        <div className="flex justify-between mb-1">
-                          <span>CEO Pay Ratio:</span>
-                          <span className="font-semibold text-lg">{formData.compensation['pay-ratio-ceo'].value}</span>
-                        </div>
-                        <div className="text-xs text-green-700 bg-green-100 p-2 rounded">
-                          <strong>Formula:</strong> CEO Total Compensation ÷ Median Employee Compensation = Ratio:1
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Category-Specific Guidance */}
-              {currentCategory === 'workforce' && (
-                <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-900">
-                    <Info strokeWidth={2} />
-                    Workforce Composition Guidance
-                  </div>
-                  <ul className="space-y-1 text-xs text-blue-800">
-                    <li>• <strong>GRI 2-7:</strong> Report total employees by employment contract (permanent/temporary) and type (full-time/part-time)</li>
-                    <li>• <strong>CSRD S1-6:</strong> Total number of employees at the end of the reporting period</li>
-                    <li>• Include all direct employees; contractors reported separately under GRI 2-8</li>
-                    <li>• Count employees as of the last day of the reporting period</li>
-                  </ul>
-                </div>
-              )}
-
-              {currentCategory === 'gender' && (
-                <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-900">
-                    <Info strokeWidth={2} />
-                    Gender Diversity Guidance
-                  </div>
-                  <ul className="space-y-1 text-xs text-blue-800">
-                    <li>• <strong>GRI 405-1:</strong> Report diversity of governance bodies and employees by gender and age group</li>
-                    <li>• <strong>CSRD S1-9:</strong> Gender distribution across workforce, including management and governance</li>
-                    <li>• Break down by employee category: board, senior executives, management, and all employees</li>
-                    <li>• Consider offering "non-binary" or "prefer not to say" options</li>
-                  </ul>
-                </div>
-              )}
-
-              {currentCategory === 'turnover' && (
-                <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-900">
-                    <Info strokeWidth={2} />
-                    New Hires & Turnover Guidance
-                  </div>
-                  <ul className="space-y-1 text-xs text-blue-800">
-                    <li>• <strong>GRI 401-1:</strong> Total new hires and employee turnover by age group, gender, and region</li>
-                    <li>• <strong>CSRD S1-6:</strong> Number and rate of employee turnover in the reporting period</li>
-                    <li>• Turnover rate = (Number of departures / Average number of employees) × 100</li>
-                    <li>• Distinguish between voluntary (resignation) and involuntary (dismissal) turnover</li>
-                  </ul>
-                </div>
-              )}
-
-              {currentCategory === 'compensation' && (
-                <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-900">
-                    <Info strokeWidth={2} />
-                    Pay & Compensation Guidance
-                  </div>
-                  <ul className="space-y-1 text-xs text-blue-800">
-                    <li>• <strong>GRI 405-2:</strong> Ratio of basic salary and remuneration of women to men</li>
-                    <li>• <strong>CSRD S1-13:</strong> Gender pay gap (unadjusted and adjusted)</li>
-                    <li>• Gender pay gap = ((Male median pay - Female median pay) / Male median pay) × 100</li>
-                    <li>• CEO pay ratio = Total CEO compensation / Median employee compensation</li>
-                  </ul>
-                </div>
-              )}
-
-              {/* Comprehensive Calculation Summary */}
-              {showCalculations && (
-                <div className="mt-6 rounded-lg border-2 border-green-400 bg-gradient-to-br from-green-50 to-emerald-50 p-6 shadow-lg">
-                  <div className="mb-4 flex items-center justify-between border-b border-green-300 pb-3">
-                    <div className="flex items-center gap-2">
-                      <Award className="h-6 w-6 text-green-700" strokeWidth={2} />
-                      <h3 className="text-xl font-bold text-green-900">Automated Calculations Summary</h3>
-                    </div>
-                    <button
-                      onClick={() => setShowCalculations(false)}
-                      className="text-green-700 hover:text-green-900"
-                    >
-                      <X className="h-5 w-5" strokeWidth={2} />
-                    </button>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {/* Worker Categorization */}
-                    {formData.workforce['total-employees'].value && formData.workforce['contractors'].value && (
-                      <div className="rounded-lg bg-white p-4 shadow-sm">
-                        <h4 className="mb-3 font-semibold text-green-900">👥 Worker Categorization</h4>
-                        {(() => {
-                          const totalEmp = parseFloat(formData.workforce['total-employees'].value) || 0;
-                          const contractors = parseFloat(formData.workforce['contractors'].value) || 0;
-                          const result = categorizeWorkers(totalEmp, contractors);
-                          return (
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Direct Employees:</span>
-                                <span className="font-semibold">{result.directEmployees}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Contractors:</span>
-                                <span className="font-semibold">{result.indirectWorkers}</span>
-                              </div>
-                              <div className="flex justify-between border-t pt-2">
-                                <span className="font-semibold">Total Workforce:</span>
-                                <span className="font-bold text-lg text-green-700">{result.total}</span>
-                              </div>
-                              <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                                Employee % = {result.employeePercentage}% of total workforce
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    )}
-
-                    {/* Turnover Rate */}
-                    {formData.turnover['turnover-total'].value && formData.workforce['total-employees'].value && (
-                      <div className="rounded-lg bg-white p-4 shadow-sm">
-                        <h4 className="mb-3 font-semibold text-green-900">🔄 Turnover Rate</h4>
-                        {(() => {
-                          const departures = parseFloat(formData.turnover['turnover-total'].value) || 0;
-                          const avgEmployees = parseFloat(formData.workforce['total-employees'].value) || 0;
-                          const rate = calculateTurnoverRate(departures, avgEmployees);
-                          return (
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Departures:</span>
-                                <span className="font-semibold">{departures}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Avg Employees:</span>
-                                <span className="font-semibold">{avgEmployees}</span>
-                              </div>
-                              <div className="flex justify-between border-t pt-2">
-                                <span className="font-semibold">Turnover Rate:</span>
-                                <span className="font-bold text-lg text-green-700">{rate}%</span>
-                              </div>
-                              <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                                Formula: ({departures} ÷ {avgEmployees}) × 100
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    )}
-
-                    {/* Gender Pay Gap */}
-                    {formData.compensation['pay-gap-gender'].value && (
-                      <div className="rounded-lg bg-white p-4 shadow-sm">
-                        <h4 className="mb-3 font-semibold text-green-900">⚖️ Gender Pay Gap</h4>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between border-t pt-2">
-                            <span className="font-semibold">Pay Gap:</span>
-                            <span className="font-bold text-lg text-green-700">{formData.compensation['pay-gap-gender'].value}%</span>
-                          </div>
-                          <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                            Formula: ((Male Pay - Female Pay) ÷ Male Pay) × 100
-                          </div>
-                          <div className="mt-2 text-xs text-gray-700">
-                            {parseFloat(formData.compensation['pay-gap-gender'].value) < 5 
-                              ? '✅ Excellent pay equity' 
-                              : parseFloat(formData.compensation['pay-gap-gender'].value) < 15 
-                              ? '⚠️ Moderate gap - improvement recommended' 
-                              : '❌ Significant gap - urgent action needed'}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* CEO Pay Ratio */}
-                    {formData.compensation['pay-ratio-ceo'].value && (
-                      <div className="rounded-lg bg-white p-4 shadow-sm">
-                        <h4 className="mb-3 font-semibold text-green-900">💰 CEO Pay Ratio</h4>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between border-t pt-2">
-                            <span className="font-semibold">Ratio:</span>
-                            <span className="font-bold text-lg text-green-700">{formData.compensation['pay-ratio-ceo'].value}</span>
-                          </div>
-                          <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                            Formula: CEO Compensation ÷ Median Employee Pay
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Gender Distribution */}
-                    {formData.gender['male-employees'].value && formData.gender['female-employees'].value && (
-                      <div className="rounded-lg bg-white p-4 shadow-sm">
-                        <h4 className="mb-3 font-semibold text-green-900">👫 Gender Distribution</h4>
-                        {(() => {
-                          const male = parseFloat(formData.gender['male-employees'].value) || 0;
-                          const female = parseFloat(formData.gender['female-employees'].value) || 0;
-                          const nonBinary = parseFloat(formData.gender['non-binary-employees'].value) || 0;
-                          const total = male + female + nonBinary;
-                          return (
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Male:</span>
-                                <span className="font-semibold">{male} ({total > 0 ? ((male/total)*100).toFixed(1) : 0}%)</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Female:</span>
-                                <span className="font-semibold">{female} ({total > 0 ? ((female/total)*100).toFixed(1) : 0}%)</span>
-                              </div>
-                              {nonBinary > 0 && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Non-binary:</span>
-                                  <span className="font-semibold">{nonBinary} ({total > 0 ? ((nonBinary/total)*100).toFixed(1) : 0}%)</span>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="mt-6 flex gap-4 border-t border-cd-border pt-6">
-                <button
-                  className="flex-1 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700 flex items-center justify-center gap-2"
-                  onClick={handleSave}
-                  disabled={loading || saveStatus === 'saving' || saveStatus === 'submitting'}
-                >
-                  <Save strokeWidth={2} />
-                  {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? '✓ Saved' : 'Save Progress'}
-                </button>
-                <button
-                  className="flex-1 rounded-lg bg-green-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-green-700 flex items-center justify-center gap-2"
-                  onClick={handleSubmit}
-                  disabled={loading || saveStatus === 'saving' || saveStatus === 'submitting'}
-                >
-                  {saveStatus === 'submitting' ? 'Submitting...' : saveStatus === 'submitted' ? '✓ Submitted' : 'Submit Data'}
-                </button>
-                <button
-                  className="flex-1 rounded-lg border-2 border-green-600 bg-white px-6 py-3 font-semibold text-green-700 transition-colors hover:bg-green-50 flex items-center justify-center gap-2"
-                  onClick={() => setShowCalculations(!showCalculations)}
-                >
-                  <Award className="w-4 h-4" strokeWidth={2} />
-                  {showCalculations ? 'Hide' : 'Show'} Automated Calculations
-                </button>
-              </div>
+            <DataCollectionForm
+              category={currentCategoryData}
+              formData={formData}
+              handleInputChange={handleInputChange}
+            />
+            <GuidancePanel categoryId={currentCategory} />
+            {showCalculations && (
+              <CalculationSummary results={calculationResults} onClose={() => setShowCalculations(false)} />
+            )}
+            <div className="mt-6 flex gap-4">
+              <button className="btn-primary flex-1" onClick={() => alert('Data saved!')}>
+                <Save className="h-4 w-4" /> Save Progress
+              </button>
+              <button className="btn-secondary flex-1" onClick={() => setShowCalculations(p => !p)}>
+                <Award className="h-4 w-4" /> {showCalculations ? 'Hide' : 'Show'} Calculations
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default EmployeeDemographicsCollection;
-
+}

@@ -2,41 +2,42 @@ const express = require('express')
 const http = require('http')
 const cors = require('cors')
 const helmet = require('helmet')
+const mongoSanitize = require('express-mongo-sanitize')
+const xss = require('xss-clean')
 const rateLimit = require('express-rate-limit')
 const cookieParser = require('cookie-parser')
 const session = require('express-session')
-const securityHeaders = require('./middleware/security')
 require('dotenv').config()
 
 const { connectDatabases, disconnectDatabases, mongoose } = require('./config/database')
 const { initializeWebSocket } = require('./services/websocketService')
 const { initializeQueues } = require('./services/queueService')
 const { startEmailWorker } = require('./workers/emailWorker')
+const errorHandler = require('./middleware/errorHandler')
 
 const app = express()
 const server = http.createServer(app)
 const PORT = process.env.PORT || 5500
 
-// Security middleware
-app.use(securityHeaders)
+// Middleware
+// Set security headers
+app.use(helmet())
+
+// Prevent NoSQL injection
+app.use(mongoSanitize())
+
+// Prevent XSS attacks
+app.use(xss())
+
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true
 }))
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
+app.use(express.json({ limit: '10kb' })) // Body limit is 10kb
+app.use(express.urlencoded({ extended: true, limit: '10kb' }))
 app.use(cookieParser())
-// Validate required environment variables
-const requiredEnvVars = ['JWT_SECRET', 'SESSION_SECRET']
-const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar])
-if (missingEnvVars.length > 0) {
-  console.error('❌ Missing required environment variables:', missingEnvVars.join(', '))
-  console.error('Please set these variables in your .env file')
-  process.exit(1)
-}
-
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || 'your-session-secret',
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -46,37 +47,20 @@ app.use(session({
   }
 }))
 
-// Rate limiting - apply only to non-auth routes
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 
-    (parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100) : 
-    (parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 10000), // Much higher limit for development
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => {
-    // Skip rate limiting for health checks and auth endpoints
-    if (req.path === '/api/health' || req.path === '/api/health/detailed') return true
-    // Skip rate limiting for all auth endpoints
-    if (req.path.startsWith('/api/auth/')) return true
-    return false
-  }
-})
-
-// Apply rate limiting to all API routes except auth
-app.use((req, res, next) => {
-  // Skip auth routes
-  if (req.path.startsWith('/api/auth/')) {
-    return next()
-  }
-  limiter(req, res, next)
-})
+// Rate limiting - TEMPORARILY DISABLED FOR DEVELOPMENT
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 1000 requests in dev, 100 in production
+//   message: 'Too many requests from this IP, please try again later.',
+//   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+//   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+// })
+// app.use('/api/', limiter)
 
 // Health check routes
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     message: 'CarbonDepict API is running',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
@@ -145,18 +129,10 @@ app.use('/api/emissions', require('./routes/emissions'))
 // Auth routes
 app.use('/api/auth', require('./routes/auth'))
 
-// Enterprise API Routes
-app.use('/api', require('./routes/enterprise'))
-app.use('/api/data-collection', require('./routes/data-collection'))
-app.use('/api/frameworks', require('./routes/frameworks'))
-app.use('/api/analytics', require('./routes/analytics'))
-app.use('/api/files', require('./routes/files'))
-app.use('/api/system', require('./routes/system'))
-
 // User routes
 app.use('/api/users', require('./routes/users'))
 
-// Report routes (single registration)
+// Report routes
 app.use('/api/reports', require('./routes/reports'))
 
 // AI inference routes
@@ -165,6 +141,7 @@ app.use('/api/ai', require('./routes/ai'))
 // ESG routes
 app.use('/api/esg/metrics', require('./routes/esg-metrics'))
 app.use('/api/esg/reports', require('./routes/esg-reports'))
+app.use('/api/esg/framework-data', require('./routes/esg-framework-data'))
 
 // Compliance routes
 app.use('/api/compliance', require('./routes/compliance'))
@@ -172,10 +149,8 @@ app.use('/api/compliance', require('./routes/compliance'))
 // Admin routes
 app.use('/api/admin', require('./routes/admin'))
 
-const { globalErrorHandler } = require('./utils/errorHandler')
-
 // Error handling middleware
-app.use(globalErrorHandler)
+app.use(errorHandler)
 
 // 404 handler
 app.use((req, res) => {
@@ -250,9 +225,9 @@ const gracefulShutdown = async (signal) => {
     await closeQueues()
     console.log('✅ Job queues closed')
 
-  // Close database connections
-  await disconnectDatabases()
-  console.log('✅ Database connections closed')
+    // Close database connections
+    await disconnectDatabases()
+    console.log('✅ Database connections closed')
 
     console.log('👋 Graceful shutdown complete')
     process.exit(0)

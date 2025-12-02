@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 
-const mongoose = require('mongoose')
-const bcrypt = require('bcryptjs')
-const { User } = require('./models/mongodb')
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import User from './models/mongodb/User.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 async function updatePassword() {
   try {
@@ -44,4 +47,4 @@ async function updatePassword() {
   }
 }
 
-updatePassword()
+updatePassword();

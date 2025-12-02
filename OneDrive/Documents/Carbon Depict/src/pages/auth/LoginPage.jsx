@@ -23,52 +23,13 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    // Client-side validation
-    console.log('🔍 Validating form data:', {
-      email: formData.email,
-      emailLength: formData.email?.length,
-      emailTrimmed: formData.email?.trim(),
-      passwordLength: formData.password?.length
-    })
-    
-    if (!formData.email || !formData.email.trim()) {
-      console.log('❌ Email validation failed: email is empty or whitespace')
-      setError('Please enter your email address')
-      setLoading(false)
-      return
-    }
-
-    if (!formData.email.includes('@')) {
-      setError('Please enter a valid email address')
-      setLoading(false)
-      return
-    }
-
-    if (!formData.password || !formData.password.trim()) {
-      setError('Please enter your password')
-      setLoading(false)
-      return
-    }
-
-    console.log('=== LOGIN ATTEMPT ===')
-    console.log('Email:', formData.email)
-    console.log('Password length:', formData.password.length)
-    console.log('Calling login function...')
-
-    const result = await login(formData.email.trim(), formData.password)
-
-    console.log('=== LOGIN RESULT ===')
-    console.log('Success:', result.success)
-    console.log('Error:', result.error)
-    console.log('Full result:', result)
+    const result = await login(formData.email, formData.password)
 
     if (result.success) {
-      console.log('✅ Login successful! Redirecting...')
       // Redirect to the page they tried to visit or dashboard
       const from = location.state?.from?.pathname || '/dashboard'
       navigate(from, { replace: true })
     } else {
-      console.error('❌ Login failed:', result.error)
       setError(result.error)
       setLoading(false)
     }
@@ -76,12 +37,7 @@ export default function LoginPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    console.log('📝 Input changed:', { name, value, valueLength: value.length })
-    setFormData(prev => {
-      const updated = { ...prev, [name]: value }
-      console.log('📋 Updated formData:', updated)
-      return updated
-    })
+    setFormData({ ...formData, [name]: value })
   }
 
   return (
@@ -108,7 +64,7 @@ export default function LoginPage() {
               <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" strokeWidth={2} />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-red-800">Login Failed</p>
-                  <p className="text-sm text-red-700 mt-1">{error}</p>
+                  <p className="text-sm text-red-700 mt-1">Invalid credentials. Please check your email and password.</p>
                 </div>
             </div>
           )}
@@ -118,8 +74,7 @@ export default function LoginPage() {
               label="Email address"
               type="email"
               name="email"
-              id="login-email"
-              value={formData.email || ''}
+              value={formData.email}
               onChange={handleChange}
               placeholder="you@company.com"
               required
@@ -131,8 +86,7 @@ export default function LoginPage() {
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
                 name="password"
-                id="login-password"
-                value={formData.password || ''}
+                value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
                 required
@@ -148,13 +102,10 @@ export default function LoginPage() {
             </div>
 
             <div className="flex items-center justify-between">
-              <label htmlFor="remember-me" className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-2">
                 <input
-                  id="remember-me"
-                  name="remember-me"
                   type="checkbox"
                   className="h-4 w-4 rounded border-cd-border text-cd-midnight focus:ring-cd-desert"
-                  autoComplete="off"
                 />
                 <span className="text-sm text-cd-muted">Remember me</span>
               </label>

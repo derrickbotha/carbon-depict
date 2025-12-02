@@ -1,12 +1,19 @@
 #!/usr/bin/env node
 
-const bcrypt = require('bcryptjs')
-const mongoose = require('mongoose')
-require('dotenv').config()
+import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+dotenv.config();
 
 // Import models
-const User = require('./server/models/mongodb/User.js')
-const Company = require('./server/models/mongodb/Company.js')
+import User from './server/models/mongodb/User.js';
+import Company from './server/models/mongodb/Company.js';
 
 const createTestUser = async () => {
   try {
@@ -53,17 +60,18 @@ const createTestUser = async () => {
 
     // Hash password
     const saltRounds = 12
-    const hashedPassword = await bcrypt.hash('TestPassword123!', saltRounds)
+    const hashedPassword = await bcrypt.hash('db123!@#DB', saltRounds)
 
     // Create test user
     const testUser = new User({
-      email: 'test@carbondepict.com',
+      email: 'db@carbondepict.com',
       password: hashedPassword,
-      firstName: 'Test',
-      lastName: 'User',
+      firstName: 'Derrick',
+      lastName: 'Botha',
       role: 'admin',
       companyId: testCompany._id,
       isEmailVerified: true,
+      emailVerified: true,
       emailVerificationToken: null,
       emailVerificationExpires: null,
       isActive: true,
@@ -212,8 +220,8 @@ const createTestUser = async () => {
     console.log('\n🎉 Test Users Created Successfully!')
     console.log('=====================================')
     console.log('📧 Admin User:')
-    console.log('   Email: test@carbondepict.com')
-    console.log('   Password: TestPassword123!')
+    console.log('   Email: db@carbondepict.com')
+    console.log('   Password: db123!@#DB')
     console.log('   Role: Admin (Full Access)')
     console.log('')
     console.log('📧 Manager User:')
@@ -232,7 +240,7 @@ const createTestUser = async () => {
     console.log('   Size: Medium (50-200 employees)')
     console.log('')
     console.log('✅ All users are email verified and ready to use!')
-    console.log('🌐 You can now login at: http://localhost:3502')
+    console.log('🌐 You can now login at: http://localhost:3500')
 
   } catch (error) {
     console.error('❌ Error creating test user:', error.message)
@@ -244,4 +252,4 @@ const createTestUser = async () => {
   }
 }
 
-createTestUser()
+createTestUser();

@@ -1,163 +1,284 @@
-// Cache bust 2025-10-23
-import { Input, Select } from '@atoms/Input'
-import { PrimaryButton } from '@atoms/Button'
-import { User, Building, Globe, Bell } from '@atoms/Icon'
+import React, { useState } from 'react';
+import { User, Building, Bell, Globe, Save } from 'lucide-react';
 
+// --- HOOK ---
+const useSettings = () => {
+  const [companyProfile, setCompanyProfile] = useState({
+    name: 'Example Corp Ltd.',
+    industry: 'energy',
+    region: 'uk',
+  });
+
+  const [userProfile, setUserProfile] = useState({
+    fullName: 'John Doe',
+    email: 'john@example.com',
+    jobTitle: 'Sustainability Manager',
+  });
+
+  const [notifications, setNotifications] = useState({
+    email: true,
+    monthlyReports: true,
+    factorUpdates: false,
+  });
+
+  const [regional, setRegional] = useState({
+    dateFormat: 'yyyy-mm-dd',
+    unitSystem: 'metric',
+  });
+
+  const handleFormChange = (setter) => (e) => {
+    const { name, value, type, checked } = e.target;
+    setter((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleSubmit = (section) => (e) => {
+    e.preventDefault();
+    console.log(`Saving ${section} settings...`);
+    // Here you would call an API to save the data
+  };
+
+  return {
+    companyProfile,
+    userProfile,
+    notifications,
+    regional,
+    handleCompanyChange: handleFormChange(setCompanyProfile),
+    handleUserChange: handleFormChange(setUserProfile),
+    handleNotificationChange: handleFormChange(setNotifications),
+    handleRegionalChange: handleFormChange(setRegional),
+    handleSubmit,
+  };
+};
+
+// --- SUB-COMPONENTS ---
+
+const Header = () => (
+  <div>
+    <h1 className="text-4xl font-bold text-greenly-midnight">Settings</h1>
+    <p className="mt-2 text-lg text-greenly-slate">
+      Manage your account, organization, and preferences.
+    </p>
+  </div>
+);
+
+const SettingsCard = ({ icon: Icon, title, children }) => (
+  <div className="bg-white rounded-2xl shadow-sm border border-greenly-light">
+    <div className="p-6 border-b border-greenly-light flex items-center gap-4">
+      <Icon className="h-6 w-6 text-greenly-teal" />
+      <h2 className="text-xl font-bold text-greenly-midnight">{title}</h2>
+    </div>
+    <div className="p-6">{children}</div>
+  </div>
+);
+
+const Input = ({ label, name, ...props }) => (
+  <div>
+    <label
+      htmlFor={name}
+      className="block text-sm font-medium text-greenly-midnight mb-1"
+    >
+      {label}
+    </label>
+    <input
+      id={name}
+      name={name}
+      {...props}
+      className="w-full rounded-xl border-2 border-greenly-light shadow-sm focus:border-greenly-teal focus:ring-4 focus:ring-greenly-teal/10 transition-all px-4 py-3 text-greenly-midnight"
+    />
+  </div>
+);
+
+const Select = ({ label, name, children, ...props }) => (
+  <div>
+    <label
+      htmlFor={name}
+      className="block text-sm font-medium text-greenly-midnight mb-1"
+    >
+      {label}
+    </label>
+    <select
+      id={name}
+      name={name}
+      {...props}
+      className="w-full rounded-xl border-2 border-greenly-light shadow-sm focus:border-greenly-teal focus:ring-4 focus:ring-greenly-teal/10 transition-all px-4 py-3 text-greenly-midnight"
+    >
+      {children}
+    </select>
+  </div>
+);
+
+const Toggle = ({ label, description, name, checked, onChange }) => (
+  <label className="flex items-center justify-between cursor-pointer group">
+    <div>
+      <p className="font-semibold text-greenly-midnight group-hover:text-greenly-teal transition-colors">{label}</p>
+      <p className="text-sm text-greenly-slate">{description}</p>
+    </div>
+    <input
+      type="checkbox"
+      name={name}
+      checked={checked}
+      onChange={onChange}
+      className="h-5 w-5 rounded border-2 border-greenly-light text-greenly-teal focus:ring-4 focus:ring-greenly-teal/10 transition-all"
+    />
+  </label>
+);
+
+const SaveButton = () => (
+  <button
+    type="submit"
+    className="flex items-center gap-2 rounded-xl bg-greenly-midnight px-6 py-2.5 text-sm font-semibold text-white hover:bg-greenly-midnight/90 transition-all shadow-sm"
+  >
+    <Save className="h-5 w-5" />
+    Save Changes
+  </button>
+);
+
+// --- MAIN COMPONENT ---
 export default function SettingsPage() {
-  const industries = [
-    { value: 'agriculture', label: 'Agriculture' },
-    { value: 'energy', label: 'Energy & Utilities' },
-    { value: 'fleet', label: 'Fleet & Transport' },
-    { value: 'food', label: 'Food Industry' },
-    { value: 'manufacturing', label: 'Manufacturing' },
-    { value: 'education', label: 'Education' },
-    { value: 'other', label: 'Other' },
-  ]
-
-  const regions = [
-    { value: 'uk', label: 'United Kingdom' },
-    { value: 'asia', label: 'South East Asia' },
-    { value: 'africa', label: 'Africa' },
-    { value: 'eu', label: 'European Union' },
-    { value: 'us', label: 'United States' },
-  ]
+  const {
+    companyProfile,
+    userProfile,
+    notifications,
+    regional,
+    handleCompanyChange,
+    handleUserChange,
+    handleNotificationChange,
+    handleRegionalChange,
+    handleSubmit,
+  } = useSettings();
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="mb-2 text-3xl font-bold text-cd-text">Settings</h1>
-        <p className="text-cd-muted">Manage your account and preferences</p>
-      </div>
+    <div className="p-4 sm:p-6 bg-greenly-secondary min-h-screen space-y-8">
+      <Header />
 
-      {/* Company Profile */}
-      <div className="rounded-lg border border-cd-border bg-white p-6 shadow-cd-sm">
-        <div className="mb-6 flex items-center gap-3">
-          <Building strokeWidth={2} />
-          <h2 className="text-xl font-semibold text-cd-text">Company Profile</h2>
-        </div>
-        <form className="space-y-6">
+      <SettingsCard icon={Building} title="Company Profile">
+        <form
+          onSubmit={handleSubmit('Company Profile')}
+          className="space-y-6 max-w-2xl"
+        >
           <Input
             label="Company Name"
+            name="name"
             type="text"
-            defaultValue="Example Corp Ltd."
+            value={companyProfile.name}
+            onChange={handleCompanyChange}
             required
           />
           <Select
             label="Industry"
-            options={industries}
-            defaultValue="agriculture"
+            name="industry"
+            value={companyProfile.industry}
+            onChange={handleCompanyChange}
             required
-          />
+          >
+            <option value="agriculture">Agriculture</option>
+            <option value="energy">Energy & Utilities</option>
+            <option value="manufacturing">Manufacturing</option>
+          </Select>
           <Select
             label="Primary Region"
-            options={regions}
-            defaultValue="uk"
+            name="region"
+            value={companyProfile.region}
+            onChange={handleCompanyChange}
             required
-            helperText="Used for default emission factors"
-          />
-          <PrimaryButton type="submit">Save Changes</PrimaryButton>
+          >
+            <option value="uk">United Kingdom</option>
+            <option value="eu">European Union</option>
+            <option value="us">United States</option>
+          </Select>
+          <SaveButton />
         </form>
-      </div>
+      </SettingsCard>
 
-      {/* User Profile */}
-      <div className="rounded-lg border border-cd-border bg-white p-6 shadow-cd-sm">
-        <div className="mb-6 flex items-center gap-3">
-          <User strokeWidth={2} />
-          <h2 className="text-xl font-semibold text-cd-text">User Profile</h2>
-        </div>
-        <form className="space-y-6">
+      <SettingsCard icon={User} title="User Profile">
+        <form
+          onSubmit={handleSubmit('User Profile')}
+          className="space-y-6 max-w-2xl"
+        >
           <Input
             label="Full Name"
+            name="fullName"
             type="text"
-            defaultValue="John Doe"
+            value={userProfile.fullName}
+            onChange={handleUserChange}
             required
           />
           <Input
             label="Email"
+            name="email"
             type="email"
-            defaultValue="john@example.com"
+            value={userProfile.email}
+            onChange={handleUserChange}
             required
           />
           <Input
             label="Job Title"
+            name="jobTitle"
             type="text"
+            value={userProfile.jobTitle}
+            onChange={handleUserChange}
             placeholder="e.g., Sustainability Manager"
           />
-          <PrimaryButton type="submit">Update Profile</PrimaryButton>
+          <SaveButton />
         </form>
-      </div>
+      </SettingsCard>
 
-      {/* Notifications */}
-      <div className="rounded-lg border border-cd-border bg-white p-6 shadow-cd-sm">
-        <div className="mb-6 flex items-center gap-3">
-          <Bell strokeWidth={2} />
-          <h2 className="text-xl font-semibold text-cd-text">Notifications</h2>
+      <SettingsCard icon={Bell} title="Notifications">
+        <div className="space-y-6 max-w-2xl">
+          <Toggle
+            label="Email Notifications"
+            description="Receive updates about your emissions data"
+            name="email"
+            checked={notifications.email}
+            onChange={handleNotificationChange}
+          />
+          <Toggle
+            label="Monthly Reports"
+            description="Automatic monthly emission summaries"
+            name="monthlyReports"
+            checked={notifications.monthlyReports}
+            onChange={handleNotificationChange}
+          />
+          <Toggle
+            label="Factor Updates"
+            description="Get notified when DEFRA factors are updated"
+            name="factorUpdates"
+            checked={notifications.factorUpdates}
+            onChange={handleNotificationChange}
+          />
         </div>
-        <div className="space-y-4">
-          <label className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-cd-text">Email notifications</p>
-              <p className="text-sm text-cd-muted">Receive updates about your emissions data</p>
-            </div>
-            <input
-              type="checkbox"
-              defaultChecked
-              className="h-5 w-5 rounded border-cd-border text-cd-midnight focus:ring-cd-desert"
-            />
-          </label>
-          <label className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-cd-text">Monthly reports</p>
-              <p className="text-sm text-cd-muted">Automatic monthly emission summaries</p>
-            </div>
-            <input
-              type="checkbox"
-              defaultChecked
-              className="h-5 w-5 rounded border-cd-border text-cd-midnight focus:ring-cd-desert"
-            />
-          </label>
-          <label className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-cd-text">Factor updates</p>
-              <p className="text-sm text-cd-muted">Get notified when DEFRA factors are updated</p>
-            </div>
-            <input
-              type="checkbox"
-              className="h-5 w-5 rounded border-cd-border text-cd-midnight focus:ring-cd-desert"
-            />
-          </label>
-        </div>
-      </div>
+      </SettingsCard>
 
-      {/* Regional Settings */}
-      <div className="rounded-lg border border-cd-border bg-white p-6 shadow-cd-sm">
-        <div className="mb-6 flex items-center gap-3">
-          <Globe strokeWidth={2} />
-          <h2 className="text-xl font-semibold text-cd-text">Regional Settings</h2>
-        </div>
-        <form className="space-y-6">
+      <SettingsCard icon={Globe} title="Regional Settings">
+        <form
+          onSubmit={handleSubmit('Regional Settings')}
+          className="space-y-6 max-w-2xl"
+        >
           <Select
             label="Date Format"
-            options={[
-              { value: 'dd/mm/yyyy', label: 'DD/MM/YYYY' },
-              { value: 'mm/dd/yyyy', label: 'MM/DD/YYYY' },
-              { value: 'yyyy-mm-dd', label: 'YYYY-MM-DD' },
-            ]}
-            defaultValue="yyyy-mm-dd"
-          />
+            name="dateFormat"
+            value={regional.dateFormat}
+            onChange={handleRegionalChange}
+          >
+            <option value="dd/mm/yyyy">DD/MM/YYYY</option>
+            <option value="mm/dd/yyyy">MM/DD/YYYY</option>
+            <option value="yyyy-mm-dd">YYYY-MM-DD</option>
+          </Select>
           <Select
             label="Unit System"
-            options={[
-              { value: 'metric', label: 'Metric (kg, km)' },
-              { value: 'imperial', label: 'Imperial (lb, mi)' },
-            ]}
-            defaultValue="metric"
-          />
-          <PrimaryButton type="submit">Save Preferences</PrimaryButton>
+            name="unitSystem"
+            value={regional.unitSystem}
+            onChange={handleRegionalChange}
+          >
+            <option value="metric">Metric (kg, km)</option>
+            <option value="imperial">Imperial (lb, mi)</option>
+          </Select>
+          <SaveButton />
         </form>
-      </div>
+      </SettingsCard>
     </div>
-  )
+  );
 }
-

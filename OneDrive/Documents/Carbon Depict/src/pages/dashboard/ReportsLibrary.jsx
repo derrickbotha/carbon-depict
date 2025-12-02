@@ -1,244 +1,163 @@
-// Cache bust 2025-10-26
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { Plus, Download, FileText, Calendar, Loader2 } from '@atoms/Icon'
-import { enterpriseAPI } from '../../services/enterpriseAPI'
+// Cache bust 2025-10-23
+import React, { useState, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Plus, Download, FileText, Calendar, CheckCircle, Loader2, BarChart2, FileUp, FileDown } from 'lucide-react';
+import { enterpriseAPI } from '../../services/enterpriseAPI'; // Assuming API service exists
 
+// --- HOOK ---
+const useReportsLibrary = () => {
+  const navigate = useNavigate();
+  const [reports, setReports] = useState([
+    // Mock data, in a real app this would be fetched
+    { id: 1, name: 'GRI Standards Report 2023', framework: 'GRI', type: 'Annual', status: 'Published', date: '2024-03-15', size: '2.4 MB' },
+    { id: 2, name: 'TCFD Climate Disclosure 2023', framework: 'TCFD', type: 'Annual', status: 'Published', date: '2024-02-20', size: '1.8 MB' },
+    { id: 3, name: 'CDP Climate Change Response', framework: 'CDP', type: 'Questionnaire', status: 'Draft', date: '2024-06-01', size: '3.1 MB' },
+    { id: 4, name: 'CSRD ESG Report Q1 2024', framework: 'CSRD', type: 'Quarterly', status: 'In Progress', date: '2024-04-30', size: '1.2 MB' },
+  ]);
+  const [isLoading, setIsLoading] = useState(false); // For future API calls
+
+  const reportStats = useMemo(() => ({
+    total: reports.length,
+    published: reports.filter(r => r.status === 'Published').length,
+    inProgress: reports.filter(r => r.status === 'In Progress').length,
+    drafts: reports.filter(r => r.status === 'Draft').length,
+  }), [reports]);
+
+  const handleDownload = (reportId) => {
+    console.log(`Downloading report ${reportId}`);
+    // In a real app: call API to get file, then use file-saver
+  };
+
+  return {
+    reports,
+    isLoading,
+    reportStats,
+    handleDownload,
+    navigate,
+  };
+};
+
+// --- SUB-COMPONENTS ---
+
+const Header = ({ onGenerateReport }) => (
+  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+    <div>
+      <h1 className="text-4xl font-bold text-greenly-charcoal">Reports Library</h1>
+      <p className="mt-2 text-lg text-greenly-slate">
+        Access and manage all your generated ESG and sustainability reports.
+      </p>
+    </div>
+    <Link
+      to="/dashboard/report-generator"
+      className="flex items-center gap-2 rounded-xl bg-greenly-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-greenly-primary/90 transition-all shadow-sm"
+    >
+      <Plus className="h-5 w-5" />
+      Generate New Report
+    </Link>
+  </div>
+);
+
+const StatCard = ({ icon: Icon, label, value, colorClass }) => (
+  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex items-center gap-4">
+    <div className={`p-3 rounded-full ${colorClass || 'bg-gray-100'}`}>
+      <Icon className="h-6 w-6" />
+    </div>
+    <div>
+      <p className="text-sm font-medium text-greenly-slate">{label}</p>
+      <p className="text-3xl font-bold text-greenly-charcoal">{value}</p>
+    </div>
+  </div>
+);
+
+const StatusBadge = ({ status }) => {
+  const statusStyles = {
+    Published: 'bg-green-100 text-green-800 border-green-200',
+    'In Progress': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    Draft: 'bg-gray-100 text-gray-800 border-gray-200',
+  };
+  return (
+    <span className={`rounded-full px-3 py-1 text-xs font-semibold border ${statusStyles[status] || statusStyles.Draft}`}>
+      {status}
+    </span>
+  );
+};
+
+const ReportsTable = ({ reports, onDownload }) => (
+  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50 border-b border-gray-200">
+          <tr>
+            {['Report Name', 'Framework', 'Type', 'Status', 'Date', 'Size', ''].map(header => (
+              <th key={header} className="px-6 py-4 text-left text-xs font-semibold text-greenly-slate uppercase tracking-wider">
+                {header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          {reports.map(report => (
+            <tr key={report.id} className="hover:bg-gray-50 transition-colors">
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-5 w-5 text-greenly-primary" />
+                  <span className="font-semibold text-greenly-charcoal">{report.name}</span>
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800 border border-blue-200">
+                  {report.framework}
+                </span>
+              </td>
+              <td className="px-6 py-4 text-greenly-slate whitespace-nowrap">{report.type}</td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <StatusBadge status={report.status} />
+              </td>
+              <td className="px-6 py-4 text-greenly-slate whitespace-nowrap">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <span>{new Date(report.date).toLocaleDateString()}</span>
+                </div>
+              </td>
+              <td className="px-6 py-4 text-greenly-slate whitespace-nowrap">{report.size}</td>
+              <td className="px-6 py-4 text-right whitespace-nowrap">
+                <button onClick={() => onDownload(report.id)} className="p-2 rounded-lg text-greenly-slate hover:bg-gray-100 hover:text-greenly-primary transition-colors">
+                  <Download className="h-5 w-5" />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
+
+// --- MAIN COMPONENT ---
 export default function ReportsLibrary() {
-  const [reports, setReports] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState(null)
-  
-  // Load reports from database
-  useEffect(() => {
-    const loadReports = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-        
-        // Fetch reports from API
-        const response = await enterpriseAPI.reports.getAll()
-        
-        if (response.data.success) {
-          setReports(response.data.data)
-        }
-      } catch (err) {
-        console.error('Error loading reports:', err)
-        setError('Failed to load reports')
-        
-        // Fallback to default reports if API fails
-        setReports([
-          {
-            _id: 1,
-            name: 'GRI Standards Sustainability Report 2024',
-            framework: 'GRI',
-            reportType: 'Annual',
-            status: 'Published',
-            publishDate: '2024-03-15',
-            fileSize: 2516582, // bytes
-            description: 'Comprehensive sustainability report following GRI Standards'
-          },
-          {
-            _id: 2,
-            name: 'TCFD Climate-Related Financial Disclosures 2024',
-            framework: 'TCFD',
-            reportType: 'Annual',
-            status: 'Published',
-            publishDate: '2024-02-20',
-            fileSize: 1887436,
-            description: 'Climate risk and opportunity disclosure report'
-          },
-          {
-            _id: 3,
-            name: 'CDP Climate Change Questionnaire 2024',
-            framework: 'CDP',
-            reportType: 'Questionnaire',
-            status: 'Draft',
-            publishDate: '2024-06-01',
-            fileSize: 3250585,
-            description: 'Carbon disclosure project climate questionnaire'
-          },
-          {
-            _id: 4,
-            name: 'CSRD ESG Report Q1 2024',
-            framework: 'CSRD',
-            reportType: 'Quarterly',
-            status: 'In Progress',
-            publishDate: '2024-04-30',
-            fileSize: 1258291,
-            description: 'EU Corporate Sustainability Reporting Directive compliance'
-          },
-          {
-            _id: 5,
-            name: 'SBTi Science-Based Targets Verification 2024',
-            framework: 'SBTi',
-            reportType: 'Annual',
-            status: 'Published',
-            publishDate: '2024-01-10',
-            fileSize: 1572864,
-            description: 'Science-based targets initiative verification report'
-          },
-          {
-            _id: 6,
-            name: 'SDG Progress Report 2024',
-            framework: 'SDG',
-            reportType: 'Annual',
-            status: 'In Progress',
-            publishDate: '2024-05-01',
-            fileSize: 2936012,
-            description: 'United Nations Sustainable Development Goals progress report'
-          },
-        ])
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    
-    loadReports()
-  }, [])
-  
-  // Format file size
-  const formatFileSize = (bytes) => {
-    if (!bytes) return 'N/A'
-    return (bytes / 1048576).toFixed(1) + ' MB'
-  }
-  
-  // Format date
-  const formatDate = (date) => {
-    if (!date) return 'N/A'
-    if (typeof date === 'string') return date
-    return new Date(date).toISOString().split('T')[0]
+  const { reports, isLoading, reportStats, handleDownload, navigate } = useReportsLibrary();
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="h-12 w-12 animate-spin text-greenly-primary" />
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-cd-midnight">Reports Library</h1>
-          <p className="mt-2 text-cd-muted">
-            Generated ESG and sustainability reports across multiple frameworks
-          </p>
-        </div>
-        <Link
-          to="/dashboard/esg/reports/generate"
-          className="flex items-center gap-2 rounded-lg bg-cd-teal px-4 py-2 text-white hover:bg-cd-teal/90"
-        >
-          <Plus strokeWidth={2} />
-          Generate Report
-        </Link>
+    <div className="p-4 sm:p-6 bg-greenly-light-gray min-h-screen">
+      <Header onGenerateReport={() => navigate('/dashboard/report-generator')} />
+
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <StatCard icon={FileText} label="Total Reports" value={reportStats.total} colorClass="bg-blue-100 text-blue-600" />
+        <StatCard icon={FileUp} label="Published" value={reportStats.published} colorClass="bg-green-100 text-green-600" />
+        <StatCard icon={Loader2} label="In Progress" value={reportStats.inProgress} colorClass="bg-yellow-100 text-yellow-600" />
+        <StatCard icon={FileDown} label="Drafts" value={reportStats.drafts} colorClass="bg-gray-200 text-gray-600" />
       </div>
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-cd-teal" />
-        </div>
-      )}
-
-      {/* Error State */}
-      {error && !isLoading && (
-        <div className="rounded-lg bg-red-50 p-4 text-red-700">
-          {error}
-        </div>
-      )}
-
-      {/* Stats */}
-      {!isLoading && (
-        <div className="grid gap-4 sm:grid-cols-4">
-        <div className="rounded-lg bg-white p-6 shadow-cd-sm">
-          <div className="flex items-center gap-3">
-            <FileText strokeWidth={2} />
-            <div>
-              <p className="text-sm text-cd-muted">Total Reports</p>
-              <p className="text-2xl font-bold">{reports.length}</p>
-            </div>
-          </div>
-        </div>
-        <div className="rounded-lg bg-white p-6 shadow-cd-sm">
-          <p className="text-sm text-cd-muted">Published</p>
-          <p className="text-2xl font-bold text-green-600">
-            {reports.filter(r => r.status === 'Published').length}
-          </p>
-        </div>
-        <div className="rounded-lg bg-white p-6 shadow-cd-sm">
-          <p className="text-sm text-cd-muted">In Progress</p>
-          <p className="text-2xl font-bold text-yellow-600">
-            {reports.filter(r => r.status === 'In Progress').length}
-          </p>
-        </div>
-        <div className="rounded-lg bg-white p-6 shadow-cd-sm">
-          <p className="text-sm text-cd-muted">Drafts</p>
-          <p className="text-2xl font-bold text-gray-600">
-            {reports.filter(r => r.status === 'Draft').length}
-          </p>
-        </div>
-        </div>
-      )}
-
-      {/* Reports List */}
-      {!isLoading && (
-        <div className="rounded-lg bg-white shadow-cd-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="px-6 py-3 text-left text-sm font-medium text-cd-midnight">Report Name</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-cd-midnight">Framework</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-cd-midnight">Description</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-cd-midnight">Type</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-cd-midnight">Status</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-cd-midnight">Date</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-cd-midnight">Size</th>
-                <th className="px-6 py-3 text-right text-sm font-medium text-cd-midnight">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {reports.map(report => (
-                <tr key={report.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <FileText strokeWidth={2} />
-                      <span className="font-medium text-cd-midnight">{report.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
-                      {report.framework}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-cd-muted">{report.description}</td>
-                  <td className="px-6 py-4 text-sm text-cd-muted">{report.type}</td>
-                  <td className="px-6 py-4">
-                    <span className={`rounded-full px-3 py-1 text-xs font-medium ${
-                      report.status === 'Published' 
-                        ? 'bg-green-50 text-green-700'
-                        : report.status === 'In Progress'
-                        ? 'bg-yellow-50 text-yellow-700'
-                        : 'bg-gray-50 text-gray-700'
-                    }`}>
-                      {report.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-cd-muted">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>{formatDate(report.publishDate || report.date)}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-cd-muted">{formatFileSize(report.fileSize || report.size)}</td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="text-cd-teal hover:text-cd-teal/80">
-                      <Download strokeWidth={2} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      )}
+      <ReportsTable reports={reports} onDownload={handleDownload} />
     </div>
-  )
+  );
 }
 
