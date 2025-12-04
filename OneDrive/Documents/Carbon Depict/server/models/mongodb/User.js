@@ -13,7 +13,15 @@ const UserSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
-      minlength: 8,
+      minlength: 12,
+      validate: {
+        validator: function(v) {
+          // At least 12 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character
+          const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/
+          return strongPasswordRegex.test(v)
+        },
+        message: 'Password must be at least 12 characters and include uppercase, lowercase, number, and special character (@$!%*?&)'
+      }
     },
     firstName: {
       type: String,
@@ -64,12 +72,27 @@ UserSchema.virtual('company', {
   justOne: true,
 })
 
+// Common weak passwords list
+const COMMON_PASSWORDS = [
+  'password', 'password123', '123456789', '12345678', 'qwerty123',
+  'abc123456', 'password1', 'letmein123', 'welcome123', 'admin123',
+  'password!', 'Password1!', 'Welcome123!', 'Qwerty123!', 'Admin123!'
+]
+
 UserSchema.pre('save', async function hashPassword(next) {
   if (!this.isModified('password')) {
     return next()
   }
 
   try {
+    // Check against common passwords before hashing
+    const passwordLower = this.password.toLowerCase()
+    if (COMMON_PASSWORDS.some(common => passwordLower.includes(common.toLowerCase()))) {
+      const error = new Error('Password is too common. Please choose a stronger, more unique password.')
+      error.name = 'ValidationError'
+      return next(error)
+    }
+
     const salt = await bcrypt.genSalt(10)
     this.password = await bcrypt.hash(this.password, salt)
     next()

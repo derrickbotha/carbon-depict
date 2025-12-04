@@ -14,6 +14,10 @@ const { initializeWebSocket } = require('./services/websocketService')
 const { initializeQueues } = require('./services/queueService')
 const { startEmailWorker } = require('./workers/emailWorker')
 const errorHandler = require('./middleware/errorHandler')
+const { requestLogger, errorLogger } = require('./middleware/requestLogger')
+const { performanceMonitoring } = require('./middleware/monitoring')
+const { setupSwagger } = require('./config/swagger')
+const logger = require('./utils/logger')
 
 const app = express()
 const server = http.createServer(app)
@@ -36,8 +40,15 @@ app.use(cors({
 app.use(express.json({ limit: '10kb' })) // Body limit is 10kb
 app.use(express.urlencoded({ extended: true, limit: '10kb' }))
 app.use(cookieParser())
+// Ensure session secret is set in production
+const sessionSecret = process.env.SESSION_SECRET
+
+if (!sessionSecret && process.env.NODE_ENV === 'production') {
+  throw new Error('SESSION_SECRET must be set in production environment')
+}
+
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-session-secret',
+  secret: sessionSecret || 'dev-only-secret-do-not-use-in-production',
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -47,17 +58,55 @@ app.use(session({
   }
 }))
 
-// Rate limiting - TEMPORARILY DISABLED FOR DEVELOPMENT
-// const limiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 1000 requests in dev, 100 in production
-//   message: 'Too many requests from this IP, please try again later.',
-//   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-//   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-// })
-// app.use('/api/', limiter)
+// Rate limiting - Enabled with environment-based configuration
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many requests from this IP, please try again later.',
+  handler: (req, res) => {
+    res.status(429).json({
+      error: 'Too many requests',
+      message: 'Too many requests from this IP, please try again later.',
+      retryAfter: Math.ceil(req.rateLimit.resetTime / 1000)
+    })
+  }
+})
 
-// Health check routes
+// Apply to all API routes
+app.use('/api/', limiter)
+
+// HTTP request logging (after security middleware, before routes)
+app.use(requestLogger)
+
+// Performance monitoring (tracks response times and metrics)
+app.use(performanceMonitoring)
+
+// API Documentation (Swagger/OpenAPI) - Setup before routes
+setupSwagger(app)
+
+// Stricter rate limiting for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Only 5 attempts per 15 minutes
+  skipSuccessfulRequests: true,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many authentication attempts, please try again later.',
+  handler: (req, res) => {
+    res.status(429).json({
+      error: 'Too many authentication attempts',
+      message: 'Too many authentication attempts from this IP, please try again later.',
+      retryAfter: Math.ceil(req.rateLimit.resetTime / 1000)
+    })
+  }
+})
+
+// Monitoring routes (health checks, metrics, version)
+app.use('/api/monitoring', require('./routes/monitoring'))
+
+// Backward compatibility - simple health check
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -66,55 +115,6 @@ app.get('/api/health', (req, res) => {
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development'
   })
-})
-
-// Detailed health check with database connections
-app.get('/api/health/detailed', async (req, res) => {
-  const health = {
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
-    version: process.env.npm_package_version || '1.0.0',
-    memory: {
-      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB',
-      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
-      rss: Math.round(process.memoryUsage().rss / 1024 / 1024) + ' MB'
-    },
-    databases: {
-      mongodb: 'unknown',
-      redis: 'unknown'
-    }
-  }
-
-  try {
-    // Check MongoDB connection
-    if (mongoose.connection.readyState === 1) {
-      health.databases.mongodb = 'connected'
-    } else {
-      health.databases.mongodb = 'disconnected'
-      health.status = 'degraded'
-    }
-  } catch (error) {
-    health.databases.mongodb = 'disconnected'
-    health.status = 'degraded'
-  }
-
-  try {
-    // Check Redis connection (if configured)
-    if (process.env.REDIS_HOST) {
-      // Redis check would go here if redis client is set up
-      health.databases.redis = 'not configured'
-    } else {
-      health.databases.redis = 'not configured'
-    }
-  } catch (error) {
-    health.databases.redis = 'disconnected'
-    health.status = 'degraded'
-  }
-
-  const statusCode = health.status === 'ok' ? 200 : 503
-  res.status(statusCode).json(health)
 })
 
 // Emission factors routes
@@ -126,7 +126,9 @@ app.use('/api/calculate', require('./routes/calculate'))
 // Emissions data routes
 app.use('/api/emissions', require('./routes/emissions'))
 
-// Auth routes
+// Auth routes (with stricter rate limiting)
+app.use('/api/auth/login', authLimiter)
+app.use('/api/auth/register', authLimiter)
 app.use('/api/auth', require('./routes/auth'))
 
 // User routes
@@ -149,6 +151,9 @@ app.use('/api/compliance', require('./routes/compliance'))
 // Admin routes
 app.use('/api/admin', require('./routes/admin'))
 
+// Error logging middleware (before error handler)
+app.use(errorLogger)
+
 // Error handling middleware
 app.use(errorHandler)
 
@@ -160,79 +165,83 @@ app.use((req, res) => {
 // Initialize databases and start server
 const startServer = async () => {
   try {
-    console.log('🔄 Starting Carbon Depict server...')
+    logger.info('Starting Carbon Depict server...')
 
     // Connect to databases
-    console.log('📊 Connecting to databases...')
+    logger.info('Connecting to databases...')
     await connectDatabases()
-    console.log('✅ Databases connected')
+    logger.info('Databases connected')
 
     // Initialize WebSocket server
-    console.log('🔌 Initializing WebSocket server...')
+    logger.info('Initializing WebSocket server...')
     initializeWebSocket(server)
-    console.log('✅ WebSocket server initialized')
+    logger.info('WebSocket server initialized')
 
     // Initialize job queues
-    console.log('⚙️  Initializing job queues...')
+    logger.info('Initializing job queues...')
     initializeQueues()
-    console.log('✅ Job queues initialized')
+    logger.info('Job queues initialized')
 
     // Start background workers
-    console.log('👷 Starting background workers...')
+    logger.info('Starting background workers...')
     startEmailWorker()
-    console.log('✅ Email worker started')
+    logger.info('Email worker started')
 
     // Start HTTP server
     server.listen(PORT, () => {
-      console.log('\n🚀 ========================================')
-      console.log(`   Carbon Depict API Server`)
-      console.log('   ========================================')
-      console.log(`   🌐 Server:     http://localhost:${PORT}`)
-      console.log(`   📊 Health:     http://localhost:${PORT}/api/health`)
-      console.log(`   🔌 WebSocket:  ws://localhost:${PORT}`)
-      console.log(`   📧 Email:      ${process.env.SMTP_HOST || 'Not configured'}`)
-      console.log(`   🍃 MongoDB:    ${process.env.MONGO_URI || 'localhost'}`)
-      console.log(`   🔴 Redis:      ${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`)
-      console.log(`   🌍 Environment: ${process.env.NODE_ENV || 'development'}`)
-      console.log('   ========================================\n')
+      logger.info('Carbon Depict API Server started', {
+        port: PORT,
+        healthEndpoint: `http://localhost:${PORT}/api/health`,
+        websocket: `ws://localhost:${PORT}`,
+        smtp: process.env.SMTP_HOST || 'Not configured',
+        mongodb: process.env.MONGODB_URI || 'localhost',
+        redis: `${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`,
+        environment: process.env.NODE_ENV || 'development',
+        pid: process.pid
+      })
     })
   } catch (error) {
-    console.error('❌ Failed to start server:', error.message)
-    console.error(error.stack)
+    logger.error('Failed to start server', {
+      error: error.message,
+      stack: error.stack
+    })
     process.exit(1)
   }
 }
 
 // Graceful shutdown
 const gracefulShutdown = async (signal) => {
-  console.log(`\n🛑 ${signal} received, starting graceful shutdown...`)
+  logger.info(`${signal} received, starting graceful shutdown...`, { signal })
 
   try {
     // Close HTTP server
     server.close(() => {
-      console.log('✅ HTTP server closed')
+      logger.info('HTTP server closed')
     })
 
     // Close WebSocket connections
     const { getIO } = require('./services/websocketService')
     const io = getIO()
     io.close(() => {
-      console.log('✅ WebSocket server closed')
+      logger.info('WebSocket server closed')
     })
 
     // Close job queues
     const { closeQueues } = require('./services/queueService')
     await closeQueues()
-    console.log('✅ Job queues closed')
+    logger.info('Job queues closed')
 
     // Close database connections
     await disconnectDatabases()
-    console.log('✅ Database connections closed')
+    logger.info('Database connections closed')
 
-    console.log('👋 Graceful shutdown complete')
+    logger.info('Graceful shutdown complete')
     process.exit(0)
   } catch (error) {
-    console.error('❌ Error during shutdown:', error)
+    logger.error('Error during shutdown', {
+      error: error.message,
+      stack: error.stack
+    })
     process.exit(1)
   }
 }

@@ -25,18 +25,21 @@ services:
     networks:
       - carbon-depict-network
 
-  # MongoDB (optional - for document storage)
+  # MongoDB (primary document storage)
   mongodb:
     image: mongo:7-jammy
     container_name: carbon-depict-mongodb
     restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-carbonadmin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mongopass123}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-carbonadmin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-mongopass123}
       MONGO_INITDB_DATABASE: ${MONGO_DB:-carbondepict}
+      MONGODB_USERNAME: ${MONGO_USER:-carbondepict_user}
+      MONGODB_PASSWORD: ${MONGO_PASSWORD:-userpass123}
     volumes:
       - mongodb-data:/data/db
       - mongodb-config:/data/configdb
+      - ./server/scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     ports:
       - "${MONGO_PORT:-27017}:27017"
     healthcheck:
@@ -44,24 +47,34 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 40s
     networks:
       - carbon-depict-network
+    command:
+      - --auth
+      - --bind_ip_all
+      - --maxConns=1000
+      - --wiredTigerCacheSizeGB=1
 
   # Redis (for caching and session management)
   redis:
     image: redis:7-alpine
     container_name: carbon-depict-redis
     restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD:-redispass123}
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD:-redispass123}
     volumes:
       - redis-data:/data
+      - ./server/config/redis.conf:/usr/local/etc/redis/redis.conf:ro
     ports:
       - "${REDIS_PORT:-6379}:6379"
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redispass123}
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-redispass123}", "ping"]
       interval: 10s
-      timeout: 5s
+      timeout: 3s
       retries: 5
+      start_period: 20s
     networks:
       - carbon-depict-network
 
@@ -83,7 +96,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-carbonpass123}
       POSTGRES_DB: ${POSTGRES_DB:-carbondepict}
       
-      MONGO_URI: mongodb://${MONGO_USER:-carbonadmin}:${MONGO_PASSWORD:-mongopass123}@mongodb:27017/${MONGO_DB:-carbondepict}?authSource=admin
+      MONGO_URI: mongodb://${MONGO_USER:-carbondepict_user}:${MONGO_PASSWORD:-userpass123}@mongodb:27017/${MONGO_DB:-carbondepict}?authSource=${MONGO_DB:-carbondepict}
       
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -163,6 +176,27 @@ services:
       - carbon-depict-network
     profiles:
       - production
+
+  # MongoDB Backup Service (on-demand backups)
+  mongodb-backup:
+    image: mongo:7-jammy
+    container_name: carbon-depict-backup
+    restart: "no"
+    depends_on:
+      - mongodb
+    environment:
+      MONGO_ROOT_USER: ${MONGO_ROOT_USER:-carbonadmin}
+      MONGO_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-mongopass123}
+      MONGO_DB_NAME: ${MONGO_DB:-carbondepict}
+    volumes:
+      - ./backups:/backups
+      - ./server/scripts:/scripts:ro
+    networks:
+      - carbon-depict-network
+    entrypoint: /bin/bash
+    command: -c "sleep infinity"
+    profiles:
+      - backup
 
 volumes:
   postgres-data:
