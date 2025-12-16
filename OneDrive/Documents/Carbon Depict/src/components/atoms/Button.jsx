@@ -1,22 +1,42 @@
-// Cache bust 2025-10-23
+/**
+ * Button Components - Carbon Depict UI Library
+ *
+ * Accessible, animated button components following Greenly Design System
+ *
+ * Features:
+ * - PropTypes validation
+ * - Framer Motion animations (press, hover)
+ * - Respects prefers-reduced-motion
+ * - Full keyboard accessibility
+ * - Icon support with configurable position
+ */
+import React from 'react'
+import PropTypes from 'prop-types'
+import { motion } from 'framer-motion'
 import clsx from 'clsx'
+
+// Animation variants that respect prefers-reduced-motion
+const buttonVariants = {
+  tap: { scale: 0.95 },
+  hover: { scale: 1.02 },
+}
 
 /**
  * Primary Button - Main CTAs
  * Greenly Design System: Earth Green background, 40px height, prominent actions
  */
-export const PrimaryButton = ({ 
-  children, 
-  onClick, 
+export const PrimaryButton = ({
+  children,
+  onClick,
   disabled = false,
   type = 'button',
   className = '',
   icon,
   iconPosition = 'left',
-  ...props 
+  ...props
 }) => {
   return (
-    <button
+    <motion.button
       type={type}
       onClick={onClick}
       disabled={disabled}
@@ -25,31 +45,51 @@ export const PrimaryButton = ({
         'inline-flex items-center justify-center gap-2',
         className
       )}
+      whileTap={!disabled ? buttonVariants.tap : undefined}
+      whileHover={!disabled ? buttonVariants.hover : undefined}
+      transition={{ duration: 0.15, ease: 'easeOut' }}
       {...props}
     >
       {icon && iconPosition === 'left' && <span className="w-5 h-5">{icon}</span>}
       {children}
       {icon && iconPosition === 'right' && <span className="w-5 h-5">{icon}</span>}
-    </button>
+    </motion.button>
   )
+}
+
+PrimaryButton.propTypes = {
+  /** Button content */
+  children: PropTypes.node.isRequired,
+  /** Click handler */
+  onClick: PropTypes.func,
+  /** Disabled state */
+  disabled: PropTypes.bool,
+  /** Button type attribute */
+  type: PropTypes.oneOf(['button', 'submit', 'reset']),
+  /** Additional CSS classes */
+  className: PropTypes.string,
+  /** Optional icon element */
+  icon: PropTypes.node,
+  /** Icon position relative to text */
+  iconPosition: PropTypes.oneOf(['left', 'right']),
 }
 
 /**
  * Secondary Button - Lower priority actions
  * Greenly Design System: Charcoal border, transparent background
  */
-export const SecondaryButton = ({ 
-  children, 
-  onClick, 
+export const SecondaryButton = ({
+  children,
+  onClick,
   disabled = false,
   type = 'button',
   className = '',
   icon,
   iconPosition = 'left',
-  ...props 
+  ...props
 }) => {
   return (
-    <button
+    <motion.button
       type={type}
       onClick={onClick}
       disabled={disabled}
@@ -58,31 +98,51 @@ export const SecondaryButton = ({
         'inline-flex items-center justify-center gap-2',
         className
       )}
+      whileTap={!disabled ? buttonVariants.tap : undefined}
+      whileHover={!disabled ? buttonVariants.hover : undefined}
+      transition={{ duration: 0.15, ease: 'easeOut' }}
       {...props}
     >
       {icon && iconPosition === 'left' && <span className="w-5 h-5">{icon}</span>}
       {children}
       {icon && iconPosition === 'right' && <span className="w-5 h-5">{icon}</span>}
-    </button>
+    </motion.button>
   )
+}
+
+SecondaryButton.propTypes = {
+  /** Button content */
+  children: PropTypes.node.isRequired,
+  /** Click handler */
+  onClick: PropTypes.func,
+  /** Disabled state */
+  disabled: PropTypes.bool,
+  /** Button type attribute */
+  type: PropTypes.oneOf(['button', 'submit', 'reset']),
+  /** Additional CSS classes */
+  className: PropTypes.string,
+  /** Optional icon element */
+  icon: PropTypes.node,
+  /** Icon position relative to text */
+  iconPosition: PropTypes.oneOf(['left', 'right']),
 }
 
 /**
  * Outline Button / Ghost Button - Tertiary actions
  * Greenly Design System: Minimal styling, hover state only
  */
-export const OutlineButton = ({ 
-  children, 
-  onClick, 
+export const OutlineButton = ({
+  children,
+  onClick,
   disabled = false,
   type = 'button',
   className = '',
   icon,
   iconPosition = 'left',
-  ...props 
+  ...props
 }) => {
   return (
-    <button
+    <motion.button
       type={type}
       onClick={onClick}
       disabled={disabled}
@@ -91,13 +151,33 @@ export const OutlineButton = ({
         'inline-flex items-center justify-center gap-2',
         className
       )}
+      whileTap={!disabled ? buttonVariants.tap : undefined}
+      whileHover={!disabled ? { scale: 1.01 } : undefined}
+      transition={{ duration: 0.15, ease: 'easeOut' }}
       {...props}
     >
       {icon && iconPosition === 'left' && <span className="w-5 h-5">{icon}</span>}
       {children}
       {icon && iconPosition === 'right' && <span className="w-5 h-5">{icon}</span>}
-    </button>
+    </motion.button>
   )
+}
+
+OutlineButton.propTypes = {
+  /** Button content */
+  children: PropTypes.node.isRequired,
+  /** Click handler */
+  onClick: PropTypes.func,
+  /** Disabled state */
+  disabled: PropTypes.bool,
+  /** Button type attribute */
+  type: PropTypes.oneOf(['button', 'submit', 'reset']),
+  /** Additional CSS classes */
+  className: PropTypes.string,
+  /** Optional icon element */
+  icon: PropTypes.node,
+  /** Icon position relative to text */
+  iconPosition: PropTypes.oneOf(['left', 'right']),
 }
 
 /**
@@ -109,17 +189,17 @@ export const GhostButton = OutlineButton
  * Icon Button - For icon-only actions
  * Greenly Design System: Compact, square 40px, minimal styling
  */
-export const IconButton = ({ 
-  children, 
-  onClick, 
+export const IconButton = ({
+  children,
+  onClick,
   disabled = false,
   type = 'button',
   className = '',
   ariaLabel,
-  ...props 
+  ...props
 }) => {
   return (
-    <button
+    <motion.button
       type={type}
       onClick={onClick}
       disabled={disabled}
@@ -134,20 +214,38 @@ export const IconButton = ({
         'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent',
         className
       )}
+      whileTap={!disabled ? buttonVariants.tap : undefined}
+      whileHover={!disabled ? { scale: 1.05 } : undefined}
+      transition={{ duration: 0.15, ease: 'easeOut' }}
       {...props}
     >
       <span className="w-5 h-5">{children}</span>
-    </button>
+    </motion.button>
   )
+}
+
+IconButton.propTypes = {
+  /** Icon element */
+  children: PropTypes.node.isRequired,
+  /** Click handler */
+  onClick: PropTypes.func,
+  /** Disabled state */
+  disabled: PropTypes.bool,
+  /** Button type attribute */
+  type: PropTypes.oneOf(['button', 'submit', 'reset']),
+  /** Additional CSS classes */
+  className: PropTypes.string,
+  /** Accessible label (required for icon-only buttons) */
+  ariaLabel: PropTypes.string.isRequired,
 }
 
 /**
  * Loading Button - Button with loading state
  * Shows spinner when loading
  */
-export const LoadingButton = ({ 
-  children, 
-  onClick, 
+export const LoadingButton = ({
+  children,
+  onClick,
   loading = false,
   disabled = false,
   type = 'button',
@@ -155,11 +253,11 @@ export const LoadingButton = ({
   className = '',
   icon,
   iconPosition = 'left',
-  ...props 
+  ...props
 }) => {
-  const ButtonComponent = 
-    variant === 'primary' ? PrimaryButton : 
-    variant === 'secondary' ? SecondaryButton : 
+  const ButtonComponent =
+    variant === 'primary' ? PrimaryButton :
+    variant === 'secondary' ? SecondaryButton :
     GhostButton
 
   return (
@@ -179,6 +277,7 @@ export const LoadingButton = ({
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <circle
               className="opacity-25"
@@ -199,6 +298,27 @@ export const LoadingButton = ({
       <span className={loading ? 'invisible' : ''}>{children}</span>
     </ButtonComponent>
   )
+}
+
+LoadingButton.propTypes = {
+  /** Button content */
+  children: PropTypes.node.isRequired,
+  /** Click handler */
+  onClick: PropTypes.func,
+  /** Loading state - shows spinner and disables button */
+  loading: PropTypes.bool,
+  /** Disabled state */
+  disabled: PropTypes.bool,
+  /** Button type attribute */
+  type: PropTypes.oneOf(['button', 'submit', 'reset']),
+  /** Button variant */
+  variant: PropTypes.oneOf(['primary', 'secondary', 'ghost']),
+  /** Additional CSS classes */
+  className: PropTypes.string,
+  /** Optional icon element */
+  icon: PropTypes.node,
+  /** Icon position relative to text */
+  iconPosition: PropTypes.oneOf(['left', 'right']),
 }
 
 // Default export for convenience

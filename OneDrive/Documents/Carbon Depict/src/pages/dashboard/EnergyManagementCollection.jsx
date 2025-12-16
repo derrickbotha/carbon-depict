@@ -1,11 +1,11 @@
 // Cache bust 2025-10-23
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Save, 
-  Download, 
-  CheckCircle2, 
+import {
+  ArrowLeft,
+  Save,
+  Download,
+  CheckCircle2,
   Circle,
   Zap,
   Leaf,
@@ -14,28 +14,32 @@ import {
   AlertCircle,
   Lightbulb,
   Battery,
-  Settings
+  Settings,
+  Loader
 } from 'lucide-react';
-// import useESGMetrics from '../../hooks/useESGMetrics'; // Assuming this hook exists and works
-
-// Mock hook since the real one is not available
-const useESGMetrics = () => ({
-  createMetric: async (data) => { console.log('Creating metric:', data); return { _id: 'new-metric-id', ...data }; },
-  updateMetric: async (id, data) => { console.log('Updating metric:', id, data); },
-  metrics: [],
-  loading: false,
-});
+import { useESGMetricForm } from '@hooks/useESGMetricForm';
+import ExportButton from '@components/molecules/ExportButton';
 
 
 // --- DATA & HOOK ---
 
 const useEnergyManagement = () => {
   const navigate = useNavigate();
-  const { createMetric, updateMetric, metrics, loading } = useESGMetrics({
-    topic: 'Energy Management',
-    pillar: 'Environmental'
-  });
-  
+  const [reportingPeriod] = useState(new Date().getFullYear().toString());
+
+  // Use the real API hook
+  const {
+    data: metrics,
+    loading: apiLoading,
+    saving,
+    error,
+    createMetric,
+    updateMetric,
+    deleteMetric,
+    exportData,
+    refetch
+  } = useESGMetricForm('energy_management', reportingPeriod);
+
   const [saveStatus, setSaveStatus] = useState('');
   const [existingMetricId, setExistingMetricId] = useState(null);
   const [currentCategory, setCurrentCategory] = useState('totalEnergy');
@@ -113,6 +117,7 @@ const useEnergyManagement = () => {
     return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
   }, [formData]);
 
+  // Load existing data from API
   useEffect(() => {
     if (metrics && metrics.length > 0) {
       const latestMetric = metrics[0];
@@ -126,33 +131,79 @@ const useEnergyManagement = () => {
   const handleSave = useCallback(async () => {
     setSaveStatus('saving');
     try {
-      const metricData = { /* ... */ };
-      if (existingMetricId) await updateMetric(existingMetricId, metricData);
-      else {
-        const newMetric = await createMetric(metricData);
-        setExistingMetricId(newMetric._id);
+      const metricData = {
+        metricName: 'Energy Management Data Collection',
+        category: 'Energy Management',
+        description: 'Comprehensive energy management data across all categories',
+        metadata: {
+          formData,
+          totalProgress,
+          categories: Object.keys(formData),
+          reportingPeriod
+        },
+        status: 'draft'
+      };
+
+      let result;
+      if (existingMetricId) {
+        result = await updateMetric(existingMetricId, metricData);
+      } else {
+        result = await createMetric(metricData);
+        if (result.success && result.data._id) {
+          setExistingMetricId(result.data._id);
+        }
       }
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus(''), 3000);
+
+      if (result.success) {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus(''), 3000);
+      } else {
+        setSaveStatus('error');
+        setTimeout(() => setSaveStatus(''), 3000);
+      }
     } catch (error) {
+      console.error('Failed to save energy data:', error);
       setSaveStatus('error');
       setTimeout(() => setSaveStatus(''), 3000);
     }
-  }, [formData, totalProgress, existingMetricId, createMetric, updateMetric]);
+  }, [formData, totalProgress, existingMetricId, createMetric, updateMetric, reportingPeriod]);
 
   const handleSubmit = useCallback(async () => {
     setSaveStatus('submitting');
     try {
-      const metricData = { /* ... */ };
-      if (existingMetricId) await updateMetric(existingMetricId, metricData);
-      else await createMetric(metricData);
-      setSaveStatus('submitted');
-      setTimeout(() => navigate('/dashboard/esg/data-entry'), 1500);
+      const metricData = {
+        metricName: 'Energy Management Data Collection',
+        category: 'Energy Management',
+        description: 'Comprehensive energy management data across all categories',
+        metadata: {
+          formData,
+          totalProgress,
+          categories: Object.keys(formData),
+          reportingPeriod
+        },
+        status: 'submitted'
+      };
+
+      let result;
+      if (existingMetricId) {
+        result = await updateMetric(existingMetricId, metricData);
+      } else {
+        result = await createMetric(metricData);
+      }
+
+      if (result.success) {
+        setSaveStatus('submitted');
+        setTimeout(() => navigate('/dashboard/esg/data-entry'), 1500);
+      } else {
+        setSaveStatus('error');
+        setTimeout(() => setSaveStatus(''), 3000);
+      }
     } catch (error) {
+      console.error('Failed to submit energy data:', error);
       setSaveStatus('error');
       setTimeout(() => setSaveStatus(''), 3000);
     }
-  }, [formData, totalProgress, existingMetricId, createMetric, updateMetric, navigate]);
+  }, [formData, totalProgress, existingMetricId, createMetric, updateMetric, navigate, reportingPeriod]);
 
   const categories = [
     { id: 'totalEnergy', name: 'Total Energy', icon: Zap, fields: 5 },
@@ -177,13 +228,15 @@ const useEnergyManagement = () => {
     handleSave,
     handleSubmit,
     saveStatus,
-    loading,
+    loading: apiLoading,
+    saving,
+    exportData,
   };
 };
 
 // --- SUB-COMPONENTS ---
 
-const Header = ({ totalProgress, onSave, onSubmit, saveStatus }) => (
+const Header = ({ totalProgress, onSave, onExport, saveStatus, loading, saving }) => (
   <div className="border-b border-greenly-light-gray bg-white">
     <div className="p-4 sm:p-6">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -201,9 +254,25 @@ const Header = ({ totalProgress, onSave, onSubmit, saveStatus }) => (
           </div>
         </div>
         <div className="flex gap-2">
-          <button className="btn-secondary"><Download className="h-4 w-4" /> Export</button>
-          <button className="btn-primary" onClick={onSave} disabled={saveStatus === 'saving'}>
-            {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? '✓ Saved' : <><Save className="h-4 w-4" /> Save</>}
+          <ExportButton onExport={onExport} disabled={loading} loading={saving} />
+          <button
+            className="btn-primary flex items-center gap-2"
+            onClick={onSave}
+            disabled={saveStatus === 'saving' || saving || loading}
+          >
+            {saveStatus === 'saving' || saving ? (
+              <>
+                <Loader className="h-4 w-4 animate-spin" /> Saving...
+              </>
+            ) : saveStatus === 'saved' ? (
+              <>
+                <CheckCircle2 className="h-4 w-4" /> Saved
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" /> Save
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -366,15 +435,31 @@ export default function EnergyManagementCollection() {
     handleSubmit,
     saveStatus,
     loading,
+    saving,
+    exportData,
   } = useEnergyManagement();
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-greenly-off-white flex items-center justify-center">
+        <div className="text-center">
+          <Loader className="w-8 h-8 text-greenly-primary animate-spin mx-auto mb-4" />
+          <p className="text-greenly-slate">Loading energy data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-greenly-off-white">
-      <Header 
-        totalProgress={totalProgress} 
+      <Header
+        totalProgress={totalProgress}
         onSave={handleSave}
-        onSubmit={handleSubmit}
+        onExport={exportData}
         saveStatus={saveStatus}
+        loading={loading}
+        saving={saving}
       />
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="mb-6">

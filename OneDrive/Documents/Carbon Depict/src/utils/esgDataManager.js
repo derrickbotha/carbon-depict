@@ -23,13 +23,31 @@ class ESGDataManager {
     this.scores = this.loadScores();
     this.listeners = new Set();
     this.wsConnected = false;
-    
+    this.initialized = false;
+
     // Initialize WebSocket connection if backend is enabled
-    if (USE_BACKEND) {
+    // Note: Do NOT sync data here - wait for authentication first
+    // WebSocket initialization moved to initialize() method
+  }
+
+  /**
+   * Initialize data sync from backend (call after authentication)
+   */
+  async initialize() {
+    if (this.initialized || !USE_BACKEND) return;
+
+    try {
+      // Sync from backend only after authentication
+      await this.syncFromBackend();
+      await this.syncScoresFromBackend();
+
+      // Initialize WebSocket after successful authentication
       this.initializeWebSocket();
-      // Sync from backend on startup
-      this.syncFromBackend();
-      this.syncScoresFromBackend();
+
+      this.initialized = true;
+      console.log('✅ ESG Data Manager initialized and synced with backend');
+    } catch (error) {
+      console.error('Error initializing ESG Data Manager:', error);
     }
   }
 
@@ -40,7 +58,7 @@ class ESGDataManager {
     try {
       // Initialize Socket.IO connection
       const socket = initializeSocket();
-      
+
       // Subscribe to framework data updates
       this.unsubscribeUpdate = subscribeToEvent('framework_data_updated', (data) => {
         console.log('Framework data updated via WebSocket:', data);
@@ -191,7 +209,7 @@ class ESGDataManager {
       const response = await apiClient.esgFrameworkData.getAll();
       if (response.data.success) {
         const backendData = response.data.data;
-        
+
         // Update local data with backend data
         Object.keys(backendData).forEach(framework => {
           const frameworkData = backendData[framework];
@@ -339,7 +357,7 @@ class ESGDataManager {
         const response = await apiClient.esgFrameworkData.getByFramework(framework);
         if (response.data.success && response.data.data) {
           const frameworkData = response.data.data.data;
-          
+
           // Update local cache
           if (['pcaf'].includes(framework)) {
             this.emissionsData[framework] = frameworkData;
@@ -348,7 +366,7 @@ class ESGDataManager {
             this.data[framework] = frameworkData;
             localStorage.setItem(ESG_STORAGE_KEY, JSON.stringify(this.data));
           }
-          
+
           return frameworkData;
         }
       } catch (error) {
@@ -655,10 +673,10 @@ export const useESGScores = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load initial scores from backend
-    const loadInitialScores = async () => {
+    // Load initial scores from cache
+    // Backend sync is handled by esgDataManager.initialize() after authentication
+    const loadInitialScores = () => {
       setLoading(true);
-      await esgDataManager.syncScoresFromBackend();
       setScores(esgDataManager.getScores());
       setLoading(false);
     };

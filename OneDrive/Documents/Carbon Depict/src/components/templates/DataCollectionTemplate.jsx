@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Factory, CheckCircle2, Circle, AlertCircle, Info } from 'lucide-react'
+import { ArrowLeft, Factory, CheckCircle2, Circle, AlertCircle, Info, Loader, Trash2, Save } from 'lucide-react'
+import ExportButton from '@components/molecules/ExportButton'
 
 export default function DataCollectionTemplate({
     title,
@@ -9,12 +10,24 @@ export default function DataCollectionTemplate({
     initialData,
     guidance,
     onSave,
+    onDelete,
+    onExport,
+    loading = false,
+    saving = false,
+    existingId,
     backLink = '/dashboard/emissions',
     headerIcon: HeaderIcon = Factory,
     headerLabel = 'SCOPE DATA',
 }) {
     const [currentCategory, setCurrentCategory] = useState(categories[0].id)
     const [formData, setFormData] = useState(initialData)
+
+    // Update form data when initialData changes (e.g., after loading from API)
+    useEffect(() => {
+        if (initialData) {
+            setFormData(initialData)
+        }
+    }, [initialData])
 
     const handleInputChange = (category, fieldKey, value) => {
         setFormData((prev) => ({
@@ -56,9 +69,21 @@ export default function DataCollectionTemplate({
 
     const currentCategoryData = categories.find((cat) => cat.id === currentCategory)
 
+    // Loading state
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <Loader className="w-8 h-8 text-greenly-primary animate-spin mx-auto mb-4" />
+                    <p className="text-greenly-slate">Loading emissions data...</p>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="space-y-6">
-            {/* Header */}
+            {/* Header with Actions */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <Link
@@ -75,6 +100,23 @@ export default function DataCollectionTemplate({
                         <h1 className="text-3xl font-bold text-greenly-midnight">{title}</h1>
                         <p className="text-greenly-slate">{description}</p>
                     </div>
+                </div>
+
+                {/* Action Buttons in Header */}
+                <div className="flex items-center gap-2">
+                    {onExport && (
+                        <ExportButton onExport={onExport} disabled={saving || loading} loading={saving} />
+                    )}
+                    {onDelete && existingId && (
+                        <button
+                            onClick={onDelete}
+                            disabled={saving || loading}
+                            className="flex items-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -230,14 +272,26 @@ export default function DataCollectionTemplate({
                         {/* Action Buttons */}
                         <div className="mt-6 flex gap-4 border-t border-greenly-light pt-6">
                             <button
-                                className="flex-1 rounded-lg bg-greenly-midnight px-6 py-3 font-semibold text-white transition-colors hover:bg-greenly-midnight/90"
+                                className="flex-1 rounded-lg bg-greenly-midnight px-6 py-3 font-semibold text-white transition-colors hover:bg-greenly-midnight/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 onClick={() => onSave ? onSave(formData) : alert('Data saved! (API integration pending)')}
+                                disabled={saving || loading}
                             >
-                                Save Progress
+                                {saving ? (
+                                    <>
+                                        <Loader className="h-5 w-5 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="h-5 w-5" />
+                                        {existingId ? 'Update Progress' : 'Save Progress'}
+                                    </>
+                                )}
                             </button>
                             <button
-                                className="flex-1 rounded-lg border border-greenly-light bg-white px-6 py-3 font-semibold text-greenly-midnight transition-colors hover:bg-greenly-off-white"
-                                onClick={() => alert('Calculate emissions (API integration pending)')}
+                                className="flex-1 rounded-lg border border-greenly-light bg-white px-6 py-3 font-semibold text-greenly-midnight transition-colors hover:bg-greenly-off-white disabled:opacity-50"
+                                onClick={() => alert('Calculate emissions (calculation engine coming soon)')}
+                                disabled={saving || loading}
                             >
                                 Calculate Emissions
                             </button>

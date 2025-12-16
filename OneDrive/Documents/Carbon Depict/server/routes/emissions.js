@@ -48,7 +48,7 @@ router.get('/', async (req, res) => {
     ]
 
     // Build base filter (company-specific)
-    const baseFilter = { companyId: req.user.company }
+    const baseFilter = { companyId: req.companyId }
 
     // Build advanced filter from query params
     let filter = buildFilter(req.query, allowedFilters, baseFilter)
@@ -68,7 +68,7 @@ router.get('/', async (req, res) => {
 
     // Generate cache key
     const cacheKey = cache.isAvailable()
-      ? `emissions:${req.user.company}:${JSON.stringify(req.query)}`
+      ? `emissions:${req.companyId}:${JSON.stringify(req.query)}`
       : null
 
     // Try to get from cache
@@ -127,13 +127,13 @@ router.get('/', async (req, res) => {
 router.get('/summary', async (req, res) => {
   try {
     const { reportingPeriod } = req.query
-    const filter = { companyId: req.user.company }
+    const filter = { companyId: req.companyId }
 
     if (reportingPeriod) filter.reportingPeriod = reportingPeriod
 
     // Generate cache key
     const cacheKey = cache.isAvailable()
-      ? `emissions:summary:${req.user.company}:${reportingPeriod || 'all'}`
+      ? `emissions:summary:${req.companyId}:${reportingPeriod || 'all'}`
       : null
 
     // Try to get from cache
@@ -219,7 +219,7 @@ router.get('/summary', async (req, res) => {
 router.get('/by-source', async (req, res) => {
   try {
     const { reportingPeriod, scope } = req.query
-    const filter = { companyId: req.user.company }
+    const filter = { companyId: req.companyId }
     
     if (reportingPeriod) filter.reportingPeriod = reportingPeriod
     if (scope) filter.scope = scope
@@ -270,7 +270,7 @@ router.get('/by-source', async (req, res) => {
 router.get('/trends', async (req, res) => {
   try {
     const { startDate, endDate, groupBy = 'month' } = req.query
-    const filter = { companyId: req.user.company }
+    const filter = { companyId: req.companyId }
     
     if (startDate) filter.recordedAt = { $gte: new Date(startDate) }
     if (endDate) filter.recordedAt = { ...filter.recordedAt, $lte: new Date(endDate) }
@@ -331,7 +331,7 @@ router.get('/:id', async (req, res) => {
     }
 
     // Check access
-    if (emission.companyId._id.toString() !== req.user.company.toString()) {
+    if (emission.companyId._id.toString() !== req.companyId) {
       return res.status(403).json({
         success: false,
         error: 'Access denied'
@@ -356,13 +356,14 @@ router.post('/', async (req, res) => {
   try {
     const emission = new GHGEmission({
       ...req.body,
-      companyId: req.user.company,
+      companyId: req.companyId,
+      createdBy: req.user._id,
     })
 
     await emission.save()
 
     // Invalidate cache for this company's emissions
-    cache.invalidate('emissions', req.user.company).catch(err => {
+    cache.invalidate('emissions', req.companyId).catch(err => {
       console.error('Cache invalidation error:', err.message)
     })
 

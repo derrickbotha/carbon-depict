@@ -108,10 +108,10 @@ async function disconnect() {
   }
 }
 
-// Export Redis client (can be null if Redis is unavailable)
-module.exports = redisClient
-
-// Export helper functions
-module.exports.getClient = getClient
-module.exports.isAvailable = isAvailable
-module.exports.disconnect = disconnect
+// Export Redis client and helper functions
+module.exports = {
+  getClient,
+  isAvailable,
+  disconnect,
+  client: redisClient
+}

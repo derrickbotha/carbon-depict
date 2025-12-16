@@ -112,16 +112,18 @@ export const apiClient = {
     create: (data) => api.post('/esg/metrics', data),
     update: (id, data) => api.put(`/esg/metrics/${id}`, data),
     delete: (id) => api.delete(`/esg/metrics/${id}`),
+    getSummary: (params) => api.get('/esg/metrics/summary', { params }),
+    getByPillar: (pillar) => api.get(`/esg/metrics/pillar/${pillar}`),
   },
 
   // ESG Framework Data endpoints
   esgFrameworkData: {
     getAll: () => api.get('/esg/framework-data'),
-    getByFramework: (framework) => api.get(`/esg/framework-data/${framework}`),
-    save: (framework, data) => api.post(`/esg/framework-data/${framework}`, { data }),
-    update: (framework, data, score) => api.put(`/esg/framework-data/${framework}`, { data, score }),
-    delete: (framework) => api.delete(`/esg/framework-data/${framework}`),
-    getScores: (framework) => api.get(`/esg/framework-data/${framework}/scores`),
+    getOverview: () => api.get('/esg/framework-data/overview'),
+    getByFramework: (framework) => api.get(`/esg/framework-data/framework/${framework}`),
+    save: (framework, payload) => api.put(`/esg/framework-data/framework/${framework}`, payload),
+    delete: (framework) => api.delete(`/esg/framework-data/framework/${framework}`),
+    getScores: (framework) => api.get(`/esg/framework-data/framework/${framework}/scores`),
     getAllScores: () => api.get('/esg/framework-data/scores/all'),
   },
 
@@ -192,6 +194,32 @@ export const apiClient = {
     updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
     deleteUser: (id) => api.delete(`/admin/users/${id}`),
   },
+
+  // Messages endpoints
+  messages: {
+    getConversations: () => api.get('/messages/conversations'),
+    getConversation: (id) => api.get(`/messages/conversations/${id}`),
+    createConversation: (data) => api.post('/messages/conversations', data),
+    sendMessage: (conversationId, data) => api.post(`/messages/conversations/${conversationId}`, data),
+    deleteConversation: (id) => api.delete(`/messages/conversations/${id}`),
+  },
+
+  // Notifications endpoints
+  notifications: {
+    getAll: (params) => api.get('/notifications', { params }),
+    create: (data) => api.post('/notifications', data),
+    broadcast: (data) => api.post('/notifications/broadcast', data),
+    markAsRead: (id) => api.put(`/notifications/${id}/read`),
+    markAllAsRead: () => api.put('/notifications/read-all'),
+    delete: (id) => api.delete(`/notifications/${id}`),
+    deleteAll: () => api.delete('/notifications'),
+  },
+
+  // Generic methods for direct API access
+  get: (url, config) => api.get(url, config),
+  post: (url, data, config) => api.post(url, data, config),
+  put: (url, data, config) => api.put(url, data, config),
+  delete: (url, config) => api.delete(url, config),
 }
 
 export default api

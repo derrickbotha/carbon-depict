@@ -67,8 +67,15 @@ const CompanySchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+    toJSON: {
+      virtuals: false,  // Disable virtuals in JSON to prevent circular reference with users
+      transform: function(doc, ret) {
+        // Remove sensitive info from JSON output
+        delete ret.__v;
+        return ret;
+      }
+    },
+    toObject: { virtuals: false },  // Disable virtuals in toObject to prevent circular reference
   }
 )
 
@@ -76,6 +83,7 @@ CompanySchema.index({ name: 1 }, { unique: true })
 CompanySchema.index({ industry: 1 })
 CompanySchema.index({ region: 1 })
 
+// This virtual can still be used explicitly but won't be auto-included in JSON
 CompanySchema.virtual('users', {
   ref: 'User',
   localField: '_id',

@@ -1,34 +1,43 @@
 /**
- * ConfirmDialog Component
- * Best practice confirmation dialog for destructive actions (DELETE, etc.)
+ * ConfirmDialog Component - Carbon Depict UI Library
+ *
+ * Accessible confirmation dialog following Greenly Design System
+ *
+ * Features:
+ * - PropTypes validation
+ * - Framer Motion animations (backdrop, modal)
+ * - Keyboard accessible (ESC to close)
+ * - Focus trap
+ * - Multiple variants (danger, warning, info)
+ * - AnimatePresence for smooth unmounting
  */
 
 import { useEffect } from 'react'
+import PropTypes from 'prop-types'
+import { motion, AnimatePresence } from 'framer-motion'
 import { AlertCircle, X } from '@atoms/Icon'
 
-export default function ConfirmDialog({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  title, 
-  message, 
-  confirmText = 'Delete', 
+export default function ConfirmDialog({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmText = 'Delete',
   cancelText = 'Cancel',
-  type = 'danger' // 'danger', 'warning', 'info'
+  type = 'danger'
 }) {
   // Handle Escape key
   useEffect(() => {
     if (!isOpen) return
-    
+
     const handleEscape = (e) => {
       if (e.key === 'Escape') onClose()
     }
-    
+
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
   }, [isOpen, onClose])
-
-  if (!isOpen) return null
 
   const colors = {
     danger: 'bg-red-50 border-red-200 text-red-900',
@@ -43,15 +52,29 @@ export default function ConfirmDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm animate-in fade-in duration-200">
-      {/* Backdrop click handler */}
-      <div 
-        className="absolute inset-0" 
-        onClick={onClose}
-      />
-      
-      {/* Dialog */}
-      <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 animate-in zoom-in-95 duration-200">
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {/* Backdrop click handler */}
+          <div
+            className="absolute inset-0"
+            onClick={onClose}
+          />
+
+          {/* Dialog */}
+          <motion.div
+            className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
         {/* Header */}
         <div className={`flex items-center justify-between px-6 py-4 border-b ${colors[type]}`}>
           <div className="flex items-center gap-3">
@@ -89,8 +112,29 @@ export default function ConfirmDialog({
             {confirmText}
           </button>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
+}
+
+ConfirmDialog.propTypes = {
+  /** Whether dialog is open */
+  isOpen: PropTypes.bool.isRequired,
+  /** Close handler */
+  onClose: PropTypes.func.isRequired,
+  /** Confirm action handler */
+  onConfirm: PropTypes.func.isRequired,
+  /** Dialog title */
+  title: PropTypes.string.isRequired,
+  /** Dialog message */
+  message: PropTypes.string.isRequired,
+  /** Confirm button text */
+  confirmText: PropTypes.string,
+  /** Cancel button text */
+  cancelText: PropTypes.string,
+  /** Dialog type/severity */
+  type: PropTypes.oneOf(['danger', 'warning', 'info']),
 }
 

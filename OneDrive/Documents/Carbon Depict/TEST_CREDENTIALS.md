@@ -5,7 +5,7 @@
 ### Login Credentials
 ```
 Email:    db@carbondepict.com
-Password: db123!@#DB
+Password: Db123!Admin&
 ```
 
 ### User Details
@@ -33,7 +33,7 @@ Content-Type: application/json
 
 {
   "email": "db@carbondepict.com",
-  "password": "db123!@#DB"
+  "password": "Db123!Admin&"
 }
 ```
 
@@ -105,7 +105,7 @@ Authorization: Bearer {token}
 ### Login Steps
 1. Navigate to http://localhost:3500/login
 2. Enter email: `db@carbondepict.com`
-3. Enter password: `db123!@#DB`
+3. Enter password: `Db123!Admin&`
 4. Click "Sign In"
 5. You'll be redirected to the dashboard
 
@@ -208,7 +208,7 @@ WHERE name = 'Carbon Depict Test Company';
 **Solution:** The test user is created with `emailVerified: true`, so this shouldn't happen.
 
 ### Issue: "Invalid email or password"
-**Solution:** Make sure you're using the exact password: `db123!@#DB` (case-sensitive)
+**Solution:** Make sure you're using the exact password: `Db123!Admin&` (case-sensitive)
 
 ### Issue: "Account has been deactivated"
 **Solution:** Check database - user `isActive` should be `true`

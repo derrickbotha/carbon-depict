@@ -9,30 +9,39 @@
    =================================== */
 
 @layer base {
+  /* ===================================
+     THEME-AGNOSTIC DESIGN TOKENS
+     These tokens remain constant across themes
+     =================================== */
   :root {
-    /* ===== PRIMARY COLORS ===== */
+    /* ===== BRAND COLORS (Theme-Independent) ===== */
+    --brand-primary: #1B998B;           /* Greenly Teal */
+    --brand-primary-dark: #156E63;
+    --brand-primary-light: #22B8A9;
+    --brand-secondary: #07393C;         /* Midnight */
+    --brand-accent-mint: #B5FFE1;
+    --brand-accent-cedar: #A15E49;
+    --brand-accent-desert: #EDCBB1;
+
+    /* ===== LEGACY COLORS (Backward Compatibility) ===== */
     --color-primary: #34A56F;           /* Earth Green */
     --color-primary-rgb: 52, 165, 111;
     --color-deep-forest: #185E3F;       /* Deep Forest */
     --color-sage-green: #72B889;        /* Sage Green */
-    
-    /* ===== SECONDARY COLORS ===== */
     --color-light-mint: #BDF679;        /* Light Mint */
     --color-teal-accent: #227798;       /* Teal Accent */
     --color-medium-green: #4B9890;      /* Medium Green */
-    
-    /* ===== NEUTRAL COLORS ===== */
-    --color-charcoal: #2D3436;          /* Primary Text */
-    --color-medium-gray: #636E72;       /* Secondary Text */
-    --color-light-gray: #DFE6E9;        /* Borders, Dividers */
-    --color-off-white: #F8F9FA;         /* Background, Cards */
-    --color-white: #FFFFFF;             /* Pure White */
-    
-    /* ===== STATUS COLORS ===== */
-    --color-success: #34A56F;           /* On Track */
-    --color-warning: #F39C12;           /* Behind */
-    --color-alert: #E74C3C;             /* Critical */
-    --color-info: #227798;              /* Neutral */
+
+    /* ===== STATUS COLORS (Theme-Independent) ===== */
+    --color-success: #059669;           /* Success */
+    --color-success-light: #D1FAE5;     /* Success Background */
+    --color-warning: #D97706;           /* Warning */
+    --color-warning-light: #FEF3C7;     /* Warning Background */
+    --color-alert: #DC2626;             /* Error/Alert */
+    --color-error: #DC2626;             /* Error */
+    --color-error-light: #FEE2E2;       /* Error Background */
+    --color-info: #0284C7;              /* Info */
+    --color-info-light: #E0F2FE;        /* Info Background */
     
     /* ===== SPACING (Base unit: 4px) ===== */
     --space-xs: 4px;
@@ -110,6 +119,96 @@
     --z-modal: 1050;
     --z-tooltip: 1070;
   }
+
+  /* ===================================
+     LIGHT THEME (DEFAULT)
+     Theme-specific semantic colors
+     =================================== */
+  :root,
+  [data-theme="light"] {
+    /* Background Colors */
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #F9FAFB;
+    --bg-tertiary: #E5E7EB;
+    --bg-surface: #FFFFFF;
+    --bg-elevated: #FFFFFF;
+
+    /* Text Colors */
+    --text-primary: #111827;
+    --text-secondary: #4B5563;
+    --text-muted: #9CA3AF;
+    --text-disabled: #D1D5DB;
+    --text-inverse: #FFFFFF;
+
+    /* Border Colors */
+    --border-primary: #E5E7EB;
+    --border-secondary: #D1D5DB;
+    --border-focus: var(--brand-primary);
+    --border-error: var(--color-error);
+
+    /* Interactive States */
+    --interactive-hover: #F3F4F6;
+    --interactive-active: #E5E7EB;
+    --interactive-disabled: #F9FAFB;
+
+    /* Shadows (Light Theme) */
+    --shadow-color: rgba(0, 0, 0, 0.1);
+
+    /* Legacy Support */
+    --color-charcoal: #111827;
+    --color-medium-gray: #4B5563;
+    --color-light-gray: #E5E7EB;
+    --color-off-white: #F9FAFB;
+    --color-white: #FFFFFF;
+  }
+
+  /* ===================================
+     DARK THEME
+     Optimized for accessibility and reduced eye strain
+     =================================== */
+  [data-theme="dark"] {
+    /* Background Colors */
+    --bg-primary: #111827;
+    --bg-secondary: #1F2937;
+    --bg-tertiary: #374151;
+    --bg-surface: #1F2937;
+    --bg-elevated: #374151;
+
+    /* Text Colors */
+    --text-primary: #F9FAFB;
+    --text-secondary: #D1D5DB;
+    --text-muted: #9CA3AF;
+    --text-disabled: #6B7280;
+    --text-inverse: #111827;
+
+    /* Border Colors */
+    --border-primary: #374151;
+    --border-secondary: #4B5563;
+    --border-focus: var(--brand-accent-mint);
+    --border-error: var(--color-error);
+
+    /* Interactive States */
+    --interactive-hover: #374151;
+    --interactive-active: #4B5563;
+    --interactive-disabled: #1F2937;
+
+    /* Shadows (Dark Theme) */
+    --shadow-color: rgba(0, 0, 0, 0.5);
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+
+    /* Adjust brand colors for dark mode */
+    --brand-primary: #22B8A9;  /* Slightly brighter for contrast */
+    --brand-accent-mint: #B5FFE1;  /* Mint stands out well on dark */
+
+    /* Legacy Support (Dark Mode Overrides) */
+    --color-charcoal: #F9FAFB;  /* Text becomes light in dark mode */
+    --color-medium-gray: #D1D5DB;
+    --color-light-gray: #374151;  /* Borders darker in dark mode */
+    --color-off-white: #1F2937;  /* Background becomes dark */
+    --color-white: #111827;  /* Inverted */
+  }
 }
 
 /* ===== BASE STYLES ===== */
@@ -125,11 +224,13 @@
 
   body {
     font-family: var(--font-family-base);
-    color: var(--color-charcoal);
-    background-color: var(--color-off-white);
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
     line-height: var(--line-height-relaxed);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color var(--transition-base) var(--ease-standard),
+                color var(--transition-base) var(--ease-standard);
   }
 
   /* ===== TYPOGRAPHY ===== */

@@ -16,6 +16,10 @@ const UserSchema = new mongoose.Schema(
       minlength: 12,
       validate: {
         validator: function(v) {
+          // Skip validation if password is already hashed (bcrypt hash starts with $2a$ or $2b$)
+          if (v && (v.startsWith('$2a$') || v.startsWith('$2b$'))) {
+            return true
+          }
           // At least 12 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character
           const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/
           return strongPasswordRegex.test(v)
@@ -60,17 +64,32 @@ const UserSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+    toJSON: { 
+      virtuals: false,  // Disable virtuals in JSON to prevent circular reference
+      transform: function(doc, ret) {
+        delete ret.password;
+        delete ret.__v;
+        return ret;
+      }
+    },
+    toObject: { 
+      virtuals: false,  // Disable virtuals in toObject to prevent circular reference
+      transform: function(doc, ret) {
+        delete ret.password;
+        return ret;
+      }
+    },
   }
 )
 
-UserSchema.virtual('company', {
-  ref: 'Company',
-  localField: 'companyId',
-  foreignField: '_id',
-  justOne: true,
-})
+// Remove the virtual that causes circular reference
+// Company can be accessed via companyId and populated explicitly when needed
+// UserSchema.virtual('company', {
+//   ref: 'Company',
+//   localField: 'companyId',
+//   foreignField: '_id',
+//   justOne: true,
+// })
 
 // Common weak passwords list
 const COMMON_PASSWORDS = [

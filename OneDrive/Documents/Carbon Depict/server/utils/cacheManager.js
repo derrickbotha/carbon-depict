@@ -19,7 +19,7 @@ const MEMORY_CACHE_DEFAULT_TTL = 300 // 5 minutes in seconds
  * @returns {Boolean} True if Redis is connected
  */
 function isRedisAvailable() {
-  return redis && redis.status === 'ready'
+  return redis && redis.isAvailable()
 }
 
 /**
@@ -32,7 +32,8 @@ async function get(key) {
   try {
     if (isRedisAvailable()) {
       // Use Redis
-      const data = await redis.get(key)
+      const redisClient = redis.getClient()
+      const data = await redisClient.get(key)
       if (data) {
         return JSON.parse(data)
       }
@@ -66,7 +67,8 @@ async function set(key, data, ttl = 300) {
   try {
     if (isRedisAvailable()) {
       // Use Redis
-      await redis.setex(key, ttl, JSON.stringify(data))
+      const redisClient = redis.getClient()
+      await redisClient.setex(key, ttl, JSON.stringify(data))
       return true
     } else {
       // Fallback to memory cache
@@ -98,7 +100,8 @@ async function set(key, data, ttl = 300) {
 async function del(key) {
   try {
     if (isRedisAvailable()) {
-      await redis.del(key)
+      const redisClient = redis.getClient()
+      await redisClient.del(key)
     } else {
       memoryCache.delete(key)
     }

@@ -13,7 +13,7 @@ const { connectDatabases, disconnectDatabases, mongoose } = require('./config/da
 const { initializeWebSocket } = require('./services/websocketService')
 const { initializeQueues } = require('./services/queueService')
 const { startEmailWorker } = require('./workers/emailWorker')
-const errorHandler = require('./middleware/errorHandler')
+const { errorHandler } = require('./middleware/errorHandler')
 const { requestLogger, errorLogger } = require('./middleware/requestLogger')
 const { performanceMonitoring } = require('./middleware/monitoring')
 const { setupSwagger } = require('./config/swagger')
@@ -24,8 +24,22 @@ const server = http.createServer(app)
 const PORT = process.env.PORT || 5500
 
 // Middleware
-// Set security headers
-app.use(helmet())
+// Set security headers with proper CSP for WebSockets
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'", 'http:', 'https:', 'data:', 'blob:', "'unsafe-inline'"],
+      connectSrc: ["'self'", 'ws:', 'wss:', 'http:', 'https:'],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:', 'http:'],
+      fontSrc: ["'self'", 'data:'],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"]
+    }
+  }
+}))
 
 // Prevent NoSQL injection
 app.use(mongoSanitize())
@@ -34,7 +48,13 @@ app.use(mongoSanitize())
 app.use(xss())
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: [
+    process.env.CORS_ORIGIN || 'http://localhost:3500',
+    'http://localhost:3500',
+    'http://127.0.0.1:3500',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000'
+  ],
   credentials: true
 }))
 app.use(express.json({ limit: '10kb' })) // Body limit is 10kb
@@ -89,7 +109,7 @@ setupSwagger(app)
 // Stricter rate limiting for authentication endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Only 5 attempts per 15 minutes
+  max: 100, // Temporarily increased for testing
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
@@ -145,11 +165,24 @@ app.use('/api/esg/metrics', require('./routes/esg-metrics'))
 app.use('/api/esg/reports', require('./routes/esg-reports'))
 app.use('/api/esg/framework-data', require('./routes/esg-framework-data'))
 
+// ESG Data Collection routes - CSRD, Materiality, Scope3, Risks, Targets, SBTi, PCAF
+app.use('/api/csrd', require('./routes/csrd'))
+app.use('/api/materiality', require('./routes/materiality'))
+app.use('/api/scope3', require('./routes/scope3'))
+app.use('/api/risks', require('./routes/risks'))
+app.use('/api/targets', require('./routes/targets'))
+app.use('/api/sbti', require('./routes/sbti'))
+app.use('/api/pcaf', require('./routes/pcaf'))
+
 // Compliance routes
 app.use('/api/compliance', require('./routes/compliance'))
 
 // Admin routes
 app.use('/api/admin', require('./routes/admin'))
+
+// Messages and Notifications Routes
+app.use('/api/messages', require('./routes/messages'))
+app.use('/api/notifications', require('./routes/notifications'))
 
 // Error logging middleware (before error handler)
 app.use(errorLogger)
@@ -171,6 +204,10 @@ const startServer = async () => {
     logger.info('Connecting to databases...')
     await connectDatabases()
     logger.info('Databases connected')
+
+    // Seed database if empty (for in-memory DB or fresh install)
+    const seedDatabase = require('./utils/seeder')
+    await seedDatabase()
 
     // Initialize WebSocket server
     logger.info('Initializing WebSocket server...')

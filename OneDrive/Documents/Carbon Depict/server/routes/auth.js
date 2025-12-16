@@ -148,7 +148,7 @@ router.post('/register', [
     })
 
     await user.populate({
-      path: 'company',
+      path: 'companyId',
       select: 'name industry subscription isActive',
     })
 
@@ -219,7 +219,7 @@ router.post('/verify-email', async (req, res) => {
     }
 
     // Get user
-    const user = await User.findById(decoded.userId).populate('company')
+    const user = await User.findById(decoded.userId).populate('companyId')
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' })
@@ -234,7 +234,7 @@ router.post('/verify-email', async (req, res) => {
   await user.save()
 
     // Send welcome email
-    await sendWelcomeEmail(user.email, user.firstName, user.company.name)
+    await sendWelcomeEmail(user.email, user.firstName, user.companyId.name)
 
     // Log activity
     await ActivityLog.create({
@@ -280,7 +280,7 @@ router.post('/login', [
     // Find user with company
     const user = await User.findOne({ email })
       .populate({
-        path: 'company',
+        path: 'companyId',
         select: 'name industry subscription isActive'
       })
 
@@ -290,18 +290,18 @@ router.post('/login', [
 
     if (user) {
       console.log('User found:', user.email);
-      console.log('Company populated:', user.company ? user.company.name : 'NO COMPANY');
+      console.log('Company populated:', user.companyId ? user.companyId.name : 'NO COMPANY');
     }
 
     // Check if user's company is populated and active
-    if (!user.company || !user.company.isActive) {
-      if (!user.company) {
+    if (!user.companyId || !user.companyId.isActive) {
+      if (!user.companyId) {
         console.error(`User ${user.email} has no associated company or the company ID is invalid.`);
         return res.status(403).json({ error: 'Your user account is not associated with a valid company. Please contact support.' });
       }
-      
+
       // Check if company is active
-      if (!user.company.isActive) {
+      if (!user.companyId.isActive) {
         return res.status(403).json({ error: 'Company account is inactive. Please contact your administrator.' })
       }
     }
@@ -380,16 +380,17 @@ router.post('/login', [
         role: user.role,
         emailVerified: user.emailVerified,
         company: {
-          id: user.company.id,
-          name: user.company.name,
-          industry: user.company.industry,
-          subscription: user.company.subscription
+          id: user.companyId.id,
+          name: user.companyId.name,
+          industry: user.companyId.industry,
+          subscription: user.companyId.subscription
         }
       }
     })
   } catch (error) {
     console.error('Login error:', error)
-    res.status(500).json({ error: 'Login failed. Please try again.' })
+    console.error('Error stack:', error.stack)
+    res.status(500).json({ error: 'Login failed. Please try again.', debug: error.message })
   }
 })
 

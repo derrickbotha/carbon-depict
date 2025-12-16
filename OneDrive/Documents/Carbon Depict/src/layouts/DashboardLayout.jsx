@@ -15,9 +15,11 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  CheckSquare,
 } from '@atoms/Icon'
 import { IconButton } from '@atoms/Button'
 import NavigationControls from '@molecules/NavigationControls'
+import NotificationPanel from '@molecules/NotificationPanel'
 import clsx from 'clsx'
 import { useAuth } from '../contexts/AuthContext'
 import ErrorBoundary from '../components/utility/ErrorBoundary'
@@ -47,15 +49,31 @@ export default function DashboardLayout() {
     { icon: Leaf, label: 'ESG', href: '/dashboard/esg', strokeWidth: 2 },
     { icon: BarChart3, label: 'Emissions', href: '/dashboard/emissions', strokeWidth: 2 },
     { icon: FileText, label: 'Reports', href: '/dashboard/reports', strokeWidth: 2 },
-    { 
+    {
+      icon: () => (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+      ),
+      label: 'Messages',
+      href: '/dashboard/messages',
+      strokeWidth: 2
+    },
+    ...(user?.role === 'manager' || user?.role === 'admin' ? [{
+      icon: CheckSquare,
+      label: 'Approvals',
+      href: '/dashboard/approvals',
+      strokeWidth: 2
+    }] : []),
+    {
       icon: () => (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
         </svg>
-      ), 
-      label: 'Materiality', 
-      href: '/dashboard/esg/materiality', 
-      strokeWidth: 2 
+      ),
+      label: 'Materiality',
+      href: '/dashboard/esg/materiality',
+      strokeWidth: 2
     },
     { icon: Settings, label: 'Settings', href: '/dashboard/settings', strokeWidth: 2 },
   ]
@@ -258,11 +276,8 @@ export default function DashboardLayout() {
           <div className="flex-1" />
 
           <div className="flex items-center gap-1 sm:gap-2">
-            <IconButton ariaLabel="Notifications" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-greenly-alert"></span>
-            </IconButton>
-            
+            <NotificationPanel />
+
             {/* User Menu */}
             <div className="relative">
               <button

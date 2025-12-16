@@ -137,6 +137,7 @@ import {
   Lightbulb,
   Package,
   Calculator,
+  CheckSquare,
 } from 'lucide-react'
 
 export {
@@ -267,5 +268,6 @@ export {
   Lightbulb,
   Package,
   Calculator,
+  CheckSquare,
 }
 

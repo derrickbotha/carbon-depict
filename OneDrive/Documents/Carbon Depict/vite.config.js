@@ -33,6 +33,7 @@ export default defineConfig(({ mode }) => {
         '@molecules': path.resolve(__dirname, './src/components/molecules'),
         '@organisms': path.resolve(__dirname, './src/components/organisms'),
         '@pages': path.resolve(__dirname, './src/pages'),
+        '@hooks': path.resolve(__dirname, './src/hooks'),
         '@utils': path.resolve(__dirname, './src/utils'),
         '@styles': path.resolve(__dirname, './src/styles'),
       },
@@ -65,57 +66,8 @@ export default defineConfig(({ mode }) => {
 
       rollupOptions: {
         output: {
-          // Advanced code splitting strategy
-          manualChunks: (id) => {
-            // Vendor chunks
-            if (id.includes('node_modules')) {
-              // React core
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-                return 'react-vendor'
-              }
-
-              // Chart libraries
-              if (id.includes('chart.js') || id.includes('recharts') || id.includes('react-chartjs')) {
-                return 'chart-vendor'
-              }
-
-              // PDF generation
-              if (id.includes('jspdf') || id.includes('html2canvas')) {
-                return 'pdf-vendor'
-              }
-
-              // Excel/Data processing
-              if (id.includes('xlsx')) {
-                return 'data-vendor'
-              }
-
-              // UI libraries
-              if (id.includes('lucide-react') || id.includes('clsx')) {
-                return 'ui-vendor'
-              }
-
-              // Utilities
-              if (id.includes('axios') || id.includes('date-fns')) {
-                return 'utils-vendor'
-              }
-
-              // Everything else in node_modules
-              return 'vendor'
-            }
-
-            // Split by route/feature
-            if (id.includes('/src/pages/dashboard/')) {
-              return 'dashboard'
-            }
-
-            if (id.includes('/src/pages/reports/')) {
-              return 'reports'
-            }
-
-            if (id.includes('/src/components/organisms/')) {
-              return 'organisms'
-            }
-          },
+          // Simplified code splitting - avoid circular dependencies
+          manualChunks: undefined,
 
           // Consistent hashing for better caching
           entryFileNames: 'assets/[name].[hash].js',

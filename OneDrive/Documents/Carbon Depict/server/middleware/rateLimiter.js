@@ -54,9 +54,9 @@ const createRateLimiter = (options = {}) => {
   }
 
   // Use Redis store if available
-  if (redis && redis.status === 'ready') {
+  if (redis.isAvailable()) {
     limiterOptions.store = new RedisStore({
-      client: redis,
+      client: redis.getClient(),
       prefix: 'rl:'
     })
   }

@@ -1,27 +1,28 @@
-// Cache bust 2025-11-05
-import React, { useState, useMemo, useCallback } from 'react';
+// Cache bust 2025-12-11 - Integrated with CSRD API
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Save, 
-  Download, 
-  CheckCircle2, 
-  Circle, 
-  Leaf, 
-  Users, 
-  Shield, 
-  Factory, 
-  Droplet, 
-  TreeDeciduous, 
-  Recycle, 
-  Zap, 
-  Heart, 
-  Globe, 
-  Building2, 
-  AlertTriangle, 
-  Lightbulb, 
-  List, 
-  Edit3 
+import {
+  ArrowLeft,
+  Save,
+  Download,
+  CheckCircle2,
+  Circle,
+  Leaf,
+  Users,
+  Shield,
+  Factory,
+  Droplet,
+  TreeDeciduous,
+  Recycle,
+  Zap,
+  Heart,
+  Globe,
+  Building2,
+  AlertTriangle,
+  Lightbulb,
+  List,
+  Edit3,
+  Loader
 } from 'lucide-react';
 import FrameworkProgressBar from '@components/molecules/FrameworkProgressBar';
 import ESGDataEntryForm from '@components/ESGDataEntryForm';
@@ -59,6 +60,99 @@ const useCSRDData = () => {
   const [csrdData, setCsrdData] = useState(initialCsrdData);
   const [activeModule, setActiveModule] = useState('general');
   const [viewMode, setViewMode] = useState('list');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [disclosureId, setDisclosureId] = useState(null);
+  const [reportingPeriod, setReportingPeriod] = useState(new Date().getFullYear().toString());
+
+  // Load existing CSRD disclosure from API
+  useEffect(() => {
+    const loadDisclosure = async () => {
+      try {
+        setLoading(true);
+        // Get the latest disclosure for current reporting period
+        const response = await apiClient.get(`/api/csrd?reportingPeriod=${reportingPeriod}&sort=-createdAt&limit=1`);
+
+        if (response.data.success && response.data.data.length > 0) {
+          const disclosure = response.data.data[0];
+          setDisclosureId(disclosure._id);
+
+          // Map API response to local state structure
+          const loadedData = { ...initialCsrdData };
+
+          // Map generalDisclosures
+          if (disclosure.generalDisclosures) {
+            Object.keys(disclosure.generalDisclosures).forEach(key => {
+              if (loadedData.general[key]) {
+                loadedData.general[key] = {
+                  ...loadedData.general[key],
+                  value: disclosure.generalDisclosures[key] || '',
+                  completed: !!disclosure.generalDisclosures[key]
+                };
+              }
+            });
+          }
+
+          // Map environmental disclosures
+          if (disclosure.environmental) {
+            ['climateChange', 'pollution', 'water', 'biodiversity', 'circularEconomy'].forEach(category => {
+              const apiKey = category === 'climateChange' ? 'climateChange' :
+                           category === 'circularEconomy' ? 'circularEconomy' : category;
+              if (disclosure.environmental[apiKey]) {
+                Object.keys(disclosure.environmental[apiKey]).forEach(key => {
+                  if (loadedData[category] && loadedData[category][key]) {
+                    loadedData[category][key] = {
+                      ...loadedData[category][key],
+                      value: disclosure.environmental[apiKey][key] || '',
+                      completed: !!disclosure.environmental[apiKey][key]
+                    };
+                  }
+                });
+              }
+            });
+          }
+
+          // Map social disclosures
+          if (disclosure.social) {
+            ['ownWorkforce', 'valueChainWorkers', 'communities', 'consumers'].forEach(category => {
+              if (disclosure.social[category]) {
+                Object.keys(disclosure.social[category]).forEach(key => {
+                  if (loadedData[category] && loadedData[category][key]) {
+                    loadedData[category][key] = {
+                      ...loadedData[category][key],
+                      value: disclosure.social[category][key] || '',
+                      completed: !!disclosure.social[category][key]
+                    };
+                  }
+                });
+              }
+            });
+          }
+
+          // Map governance disclosures
+          if (disclosure.governance && disclosure.governance.businessConduct) {
+            Object.keys(disclosure.governance.businessConduct).forEach(key => {
+              if (loadedData.businessConduct[key]) {
+                loadedData.businessConduct[key] = {
+                  ...loadedData.businessConduct[key],
+                  value: disclosure.governance.businessConduct[key] || '',
+                  completed: !!disclosure.governance.businessConduct[key]
+                };
+              }
+            });
+          }
+
+          setCsrdData(loadedData);
+        }
+      } catch (error) {
+        console.error('Failed to load CSRD disclosure:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDisclosure();
+  }, [reportingPeriod]);
 
   const progress = useMemo(() => {
     let totalFields = 0, completedFields = 0;
@@ -98,39 +192,194 @@ const useCSRDData = () => {
     }));
   }, []);
 
-  return { csrdData, activeModule, setActiveModule, viewMode, setViewMode, progress, handleNewEntry, updateField };
+  // Save all data to API
+  const saveToAPI = useCallback(async () => {
+    try {
+      setSaving(true);
+
+      // Transform local state to API format
+      const payload = {
+        reportingPeriod,
+        generalDisclosures: {},
+        environmental: {
+          climateChange: {},
+          pollution: {},
+          water: {},
+          biodiversity: {},
+          circularEconomy: {}
+        },
+        social: {
+          ownWorkforce: {},
+          valueChainWorkers: {},
+          communities: {},
+          consumers: {}
+        },
+        governance: {
+          businessConduct: {}
+        },
+        status: 'draft'
+      };
+
+      // Map local state to API payload
+      Object.entries(csrdData.general).forEach(([key, field]) => {
+        payload.generalDisclosures[key] = field.value;
+      });
+
+      Object.entries(csrdData.climateChange).forEach(([key, field]) => {
+        payload.environmental.climateChange[key] = field.value;
+      });
+
+      Object.entries(csrdData.pollution).forEach(([key, field]) => {
+        payload.environmental.pollution[key] = field.value;
+      });
+
+      Object.entries(csrdData.water).forEach(([key, field]) => {
+        payload.environmental.water[key] = field.value;
+      });
+
+      Object.entries(csrdData.biodiversity).forEach(([key, field]) => {
+        payload.environmental.biodiversity[key] = field.value;
+      });
+
+      Object.entries(csrdData.circularEconomy).forEach(([key, field]) => {
+        payload.environmental.circularEconomy[key] = field.value;
+      });
+
+      Object.entries(csrdData.ownWorkforce).forEach(([key, field]) => {
+        payload.social.ownWorkforce[key] = field.value;
+      });
+
+      Object.entries(csrdData.valueChainWorkers).forEach(([key, field]) => {
+        payload.social.valueChainWorkers[key] = field.value;
+      });
+
+      Object.entries(csrdData.communities).forEach(([key, field]) => {
+        payload.social.communities[key] = field.value;
+      });
+
+      Object.entries(csrdData.consumers).forEach(([key, field]) => {
+        payload.social.consumers[key] = field.value;
+      });
+
+      Object.entries(csrdData.businessConduct).forEach(([key, field]) => {
+        payload.governance.businessConduct[key] = field.value;
+      });
+
+      let response;
+      if (disclosureId) {
+        // Update existing
+        response = await apiClient.put(`/api/csrd/${disclosureId}`, payload);
+      } else {
+        // Create new
+        response = await apiClient.post('/api/csrd', payload);
+        if (response.data.success && response.data.data._id) {
+          setDisclosureId(response.data.data._id);
+        }
+      }
+
+      if (response.data.success) {
+        alert('CSRD disclosure saved successfully!');
+      }
+    } catch (error) {
+      console.error('Failed to save disclosure:', error);
+      alert('Failed to save disclosure. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }, [csrdData, disclosureId, reportingPeriod]);
+
+  // Export function
+  const handleExport = useCallback(async (format) => {
+    try {
+      const response = await apiClient.get(`/api/csrd/export/${format}?reportingPeriod=${reportingPeriod}`, {
+        responseType: 'blob'
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `csrd-${reportingPeriod}.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Failed to export:', error);
+      alert('Failed to export data. Please try again.');
+    }
+  }, [reportingPeriod]);
+
+  return {
+    csrdData,
+    activeModule,
+    setActiveModule,
+    viewMode,
+    setViewMode,
+    progress,
+    handleNewEntry,
+    updateField,
+    loading,
+    saving,
+    saveToAPI,
+    handleExport,
+    reportingPeriod,
+    setReportingPeriod
+  };
 };
 
-const Header = ({ progress, viewMode, setViewMode }) => (
-  <div className="bg-white border-b border-greenly-light-gray">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <Link to="/dashboard/esg" className="p-2 hover:bg-greenly-light-gray rounded-lg transition-colors">
-            <ArrowLeft className="w-5 h-5 text-greenly-charcoal" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-greenly-charcoal">CSRD Sustainability Statement</h1>
-            <p className="text-sm text-greenly-slate mt-1">European Sustainability Reporting Standards (ESRS)</p>
+const Header = ({ progress, viewMode, setViewMode, saving, onSave, onExport, loading }) => {
+  const [showExportMenu, setShowExportMenu] = React.useState(false);
+
+  return (
+    <div className="bg-white border-b border-greenly-light-gray">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <Link to="/dashboard/esg" className="p-2 hover:bg-greenly-light-gray rounded-lg transition-colors">
+              <ArrowLeft className="w-5 h-5 text-greenly-charcoal" />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-greenly-charcoal">CSRD Sustainability Statement</h1>
+              <p className="text-sm text-greenly-slate mt-1">European Sustainability Reporting Standards (ESRS)</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-greenly-light-gray rounded-lg p-1">
+              <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === 'list' ? 'bg-white text-greenly-primary shadow-sm' : 'text-greenly-slate hover:bg-white/50'}`}>
+                <List size={16} /> Checklist
+              </button>
+              <button onClick={() => setViewMode('form')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === 'form' ? 'bg-white text-greenly-primary shadow-sm' : 'text-greenly-slate hover:bg-white/50'}`}>
+                <Edit3 size={16} /> Enhanced Form
+              </button>
+            </div>
+            <div className="relative">
+              <button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                disabled={loading}
+                className="btn-secondary flex items-center gap-2"
+              >
+                <Download size={16} /> Export
+              </button>
+              {showExportMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-greenly-light-gray z-10">
+                  <button onClick={() => { onExport('csv'); setShowExportMenu(false); }} className="w-full px-4 py-2 text-left hover:bg-greenly-light-gray text-sm">Export as CSV</button>
+                  <button onClick={() => { onExport('xlsx'); setShowExportMenu(false); }} className="w-full px-4 py-2 text-left hover:bg-greenly-light-gray text-sm">Export as Excel</button>
+                  <button onClick={() => { onExport('json'); setShowExportMenu(false); }} className="w-full px-4 py-2 text-left hover:bg-greenly-light-gray text-sm">Export as JSON</button>
+                  <button onClick={() => { onExport('pdf'); setShowExportMenu(false); }} className="w-full px-4 py-2 text-left hover:bg-greenly-light-gray text-sm">Export as PDF</button>
+                </div>
+              )}
+            </div>
+            <button onClick={onSave} disabled={saving || loading} className="btn-primary flex items-center gap-2">
+              {saving ? <Loader size={16} className="animate-spin" /> : <Save size={16} />}
+              {saving ? 'Saving...' : 'Save Progress'}
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-greenly-light-gray rounded-lg p-1">
-            <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === 'list' ? 'bg-white text-greenly-primary shadow-sm' : 'text-greenly-slate hover:bg-white/50'}`}>
-              <List size={16} /> Checklist
-            </button>
-            <button onClick={() => setViewMode('form')} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === 'form' ? 'bg-white text-greenly-primary shadow-sm' : 'text-greenly-slate hover:bg-white/50'}`}>
-              <Edit3 size={16} /> Enhanced Form
-            </button>
-          </div>
-          <button className="btn-secondary flex items-center gap-2"><Download size={16} /> Export</button>
-          <button className="btn-primary flex items-center gap-2"><Save size={16} /> Save Progress</button>
-        </div>
+        <FrameworkProgressBar framework="CSRD" completionPercentage={progress.percentage} totalFields={progress.total} completedFields={progress.completed} showDetails={true} size="md" />
       </div>
-      <FrameworkProgressBar framework="CSRD" completionPercentage={progress.percentage} totalFields={progress.total} completedFields={progress.completed} showDetails={true} size="md" />
     </div>
-  </div>
-);
+  );
+};
 
 const ModuleGrid = ({ csrdData, activeModule, setActiveModule }) => (
   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
@@ -211,11 +460,43 @@ const EnhancedFormView = ({ handleNewEntry }) => (
 );
 
 const CSRDDataCollection = () => {
-  const { csrdData, activeModule, setActiveModule, viewMode, setViewMode, progress, handleNewEntry, updateField } = useCSRDData();
+  const {
+    csrdData,
+    activeModule,
+    setActiveModule,
+    viewMode,
+    setViewMode,
+    progress,
+    handleNewEntry,
+    updateField,
+    loading,
+    saving,
+    saveToAPI,
+    handleExport
+  } = useCSRDData();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-greenly-off-white flex items-center justify-center">
+        <div className="text-center">
+          <Loader className="w-8 h-8 text-greenly-primary animate-spin mx-auto mb-4" />
+          <p className="text-greenly-slate">Loading CSRD disclosure...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-greenly-off-white">
-      <Header progress={progress} viewMode={viewMode} setViewMode={setViewMode} />
+      <Header
+        progress={progress}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        saving={saving}
+        onSave={saveToAPI}
+        onExport={handleExport}
+        loading={loading}
+      />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <ModuleGrid csrdData={csrdData} activeModule={activeModule} setActiveModule={setActiveModule} />
         <MaterialityNotice />

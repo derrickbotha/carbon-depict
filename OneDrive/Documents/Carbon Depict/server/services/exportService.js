@@ -81,6 +81,174 @@ class ExportService {
     }
   }
 
+  /**
+   * Export CSRD Disclosures
+   */
+  async exportCSRDDisclosures(data, format) {
+    try {
+      switch (format.toLowerCase()) {
+        case 'csv':
+          return await this._exportToCSV(data, 'csrd-disclosures')
+        case 'excel':
+        case 'xlsx':
+          return await this._exportToExcel(data, 'csrd-disclosures')
+        case 'json':
+          return this._exportToJSON(data)
+        case 'pdf':
+          return await this._exportToPDF(data, 'CSRD Disclosures Report')
+        default:
+          throw new Error(`Unsupported format: ${format}`)
+      }
+    } catch (error) {
+      logger.error('Error exporting CSRD disclosures:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Export Materiality Assessments
+   */
+  async exportMaterialityAssessments(data, format) {
+    try {
+      switch (format.toLowerCase()) {
+        case 'csv':
+          return await this._exportToCSV(data, 'materiality-assessments')
+        case 'excel':
+        case 'xlsx':
+          return await this._exportToExcel(data, 'materiality-assessments')
+        case 'json':
+          return this._exportToJSON(data)
+        case 'pdf':
+          return await this._exportToPDF(data, 'Materiality Assessments Report')
+        default:
+          throw new Error(`Unsupported format: ${format}`)
+      }
+    } catch (error) {
+      logger.error('Error exporting materiality assessments:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Export Scope 3 Emissions
+   */
+  async exportScope3Emissions(data, format) {
+    try {
+      switch (format.toLowerCase()) {
+        case 'csv':
+          return await this._exportToCSV(data, 'scope3-emissions')
+        case 'excel':
+        case 'xlsx':
+          return await this._exportToExcel(data, 'scope3-emissions')
+        case 'json':
+          return this._exportToJSON(data)
+        case 'pdf':
+          return await this._exportToPDF(data, 'Scope 3 Emissions Report')
+        default:
+          throw new Error(`Unsupported format: ${format}`)
+      }
+    } catch (error) {
+      logger.error('Error exporting Scope 3 emissions:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Export Risk Register
+   */
+  async exportRisks(data, format) {
+    try {
+      switch (format.toLowerCase()) {
+        case 'csv':
+          return await this._exportToCSV(data, 'risk-register')
+        case 'excel':
+        case 'xlsx':
+          return await this._exportToExcel(data, 'risk-register')
+        case 'json':
+          return this._exportToJSON(data)
+        case 'pdf':
+          return await this._exportToPDF(data, 'Risk Register Report')
+        default:
+          throw new Error(`Unsupported format: ${format}`)
+      }
+    } catch (error) {
+      logger.error('Error exporting risks:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Export ESG Targets
+   */
+  async exportTargets(data, format) {
+    try {
+      switch (format.toLowerCase()) {
+        case 'csv':
+          return await this._exportToCSV(data, 'esg-targets')
+        case 'excel':
+        case 'xlsx':
+          return await this._exportToExcel(data, 'esg-targets')
+        case 'json':
+          return this._exportToJSON(data)
+        case 'pdf':
+          return await this._exportToPDF(data, 'ESG Targets Report')
+        default:
+          throw new Error(`Unsupported format: ${format}`)
+      }
+    } catch (error) {
+      logger.error('Error exporting targets:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Export SBTi Targets
+   */
+  async exportSBTiTargets(data, format) {
+    try {
+      switch (format.toLowerCase()) {
+        case 'csv':
+          return await this._exportToCSV(data, 'sbti-targets')
+        case 'excel':
+        case 'xlsx':
+          return await this._exportToExcel(data, 'sbti-targets')
+        case 'json':
+          return this._exportToJSON(data)
+        case 'pdf':
+          return await this._exportToPDF(data, 'SBTi Targets Report')
+        default:
+          throw new Error(`Unsupported format: ${format}`)
+      }
+    } catch (error) {
+      logger.error('Error exporting SBTi targets:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Export PCAF Assessments
+   */
+  async exportPCAFAssessments(data, format) {
+    try {
+      switch (format.toLowerCase()) {
+        case 'csv':
+          return await this._exportToCSV(data, 'pcaf-assessments')
+        case 'excel':
+        case 'xlsx':
+          return await this._exportToExcel(data, 'pcaf-assessments')
+        case 'json':
+          return this._exportToJSON(data)
+        case 'pdf':
+          return await this._exportToPDF(data, 'PCAF Assessments Report')
+        default:
+          throw new Error(`Unsupported format: ${format}`)
+      }
+    } catch (error) {
+      logger.error('Error exporting PCAF assessments:', error)
+      throw error
+    }
+  }
+
   // ============ Private Export Methods ============
 
   async _exportToCSV(data, type) {

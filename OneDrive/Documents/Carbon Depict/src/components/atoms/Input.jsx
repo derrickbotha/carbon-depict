@@ -1,5 +1,19 @@
-// Cache bust 2025-10-23
+/**
+ * Input Components - Carbon Depict UI Library
+ *
+ * Accessible form input components following Greenly Design System
+ * Fully compatible with React Hook Form
+ *
+ * Features:
+ * - PropTypes validation
+ * - Framer Motion animations (focus, error states)
+ * - Full React Hook Form compatibility (forwardRef)
+ * - Comprehensive accessibility (ARIA attributes)
+ * - Error handling with animations
+ */
 import { forwardRef } from 'react'
+import PropTypes from 'prop-types'
+import { motion } from 'framer-motion'
 import clsx from 'clsx'
 import { Search } from './Icon'
 
@@ -7,21 +21,21 @@ import { Search } from './Icon'
  * Text Input - Greenly Design System
  * 40px height, greenly-light borders, greenly-primary focus rings
  */
-export const Input = forwardRef(({ 
+export const Input = forwardRef(({
   label,
   error,
   helperText,
   required = false,
   className = '',
   id,
-  ...props 
+  ...props
 }, ref) => {
   const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`
-  
+
   return (
     <div className={clsx('w-full', className)}>
       {label && (
-        <label 
+        <label
           htmlFor={inputId}
           className="mb-2 block text-sm font-medium text-greenly-charcoal"
         >
@@ -41,16 +55,20 @@ export const Input = forwardRef(({
         {...props}
       />
       {error && (
-        <p 
+        <motion.p
           id={`${inputId}-error`}
           className="mt-2 text-sm text-greenly-alert"
           role="alert"
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.15 }}
         >
           {error}
-        </p>
+        </motion.p>
       )}
       {helperText && !error && (
-        <p 
+        <p
           id={`${inputId}-helper`}
           className="mt-2 text-sm text-greenly-gray"
         >
@@ -63,17 +81,40 @@ export const Input = forwardRef(({
 
 Input.displayName = 'Input'
 
+Input.propTypes = {
+  /** Input label */
+  label: PropTypes.string,
+  /** Error message (displays in red below input) */
+  error: PropTypes.string,
+  /** Helper text (displays below input when no error) */
+  helperText: PropTypes.string,
+  /** Required field indicator */
+  required: PropTypes.bool,
+  /** Additional CSS classes */
+  className: PropTypes.string,
+  /** Input ID (auto-generated if not provided) */
+  id: PropTypes.string,
+  /** Input type */
+  type: PropTypes.string,
+  /** Input name (for React Hook Form) */
+  name: PropTypes.string,
+  /** Input placeholder */
+  placeholder: PropTypes.string,
+  /** Disabled state */
+  disabled: PropTypes.bool,
+}
+
 /**
  * SearchInput - Input with search icon
  */
-export const SearchInput = forwardRef(({ 
+export const SearchInput = forwardRef(({
   placeholder = 'Search...',
   className = '',
   id,
-  ...props 
+  ...props
 }, ref) => {
   const inputId = id || `search-${Math.random().toString(36).substr(2, 9)}`
-  
+
   return (
     <div className={clsx('relative', className)}>
       <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -93,10 +134,21 @@ export const SearchInput = forwardRef(({
 
 SearchInput.displayName = 'SearchInput'
 
+SearchInput.propTypes = {
+  /** Placeholder text */
+  placeholder: PropTypes.string,
+  /** Additional CSS classes */
+  className: PropTypes.string,
+  /** Input ID (auto-generated if not provided) */
+  id: PropTypes.string,
+  /** Input name (for React Hook Form) */
+  name: PropTypes.string,
+}
+
 /**
  * Textarea - Multi-line text input
  */
-export const Textarea = forwardRef(({ 
+export const Textarea = forwardRef(({
   label,
   error,
   helperText,
@@ -104,14 +156,14 @@ export const Textarea = forwardRef(({
   className = '',
   rows = 4,
   id,
-  ...props 
+  ...props
 }, ref) => {
   const inputId = id || `textarea-${Math.random().toString(36).substr(2, 9)}`
-  
+
   return (
     <div className={clsx('w-full', className)}>
       {label && (
-        <label 
+        <label
           htmlFor={inputId}
           className="mb-2 block text-sm font-medium text-greenly-charcoal"
         >
@@ -132,16 +184,20 @@ export const Textarea = forwardRef(({
         {...props}
       />
       {error && (
-        <p 
+        <motion.p
           id={`${inputId}-error`}
           className="mt-2 text-sm text-greenly-alert"
           role="alert"
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.15 }}
         >
           {error}
-        </p>
+        </motion.p>
       )}
       {helperText && !error && (
-        <p 
+        <p
           id={`${inputId}-helper`}
           className="mt-2 text-sm text-greenly-gray"
         >
@@ -154,10 +210,33 @@ export const Textarea = forwardRef(({
 
 Textarea.displayName = 'Textarea'
 
+Textarea.propTypes = {
+  /** Textarea label */
+  label: PropTypes.string,
+  /** Error message (displays in red below textarea) */
+  error: PropTypes.string,
+  /** Helper text (displays below textarea when no error) */
+  helperText: PropTypes.string,
+  /** Required field indicator */
+  required: PropTypes.bool,
+  /** Additional CSS classes */
+  className: PropTypes.string,
+  /** Number of visible text rows */
+  rows: PropTypes.number,
+  /** Textarea ID (auto-generated if not provided) */
+  id: PropTypes.string,
+  /** Textarea name (for React Hook Form) */
+  name: PropTypes.string,
+  /** Textarea placeholder */
+  placeholder: PropTypes.string,
+  /** Disabled state */
+  disabled: PropTypes.bool,
+}
+
 /**
  * Select - Dropdown selector
  */
-export const Select = forwardRef(({ 
+export const Select = forwardRef(({
   label,
   error,
   helperText,
@@ -166,14 +245,14 @@ export const Select = forwardRef(({
   placeholder = 'Select an option',
   className = '',
   id,
-  ...props 
+  ...props
 }, ref) => {
   const inputId = id || `select-${Math.random().toString(36).substr(2, 9)}`
-  
+
   return (
     <div className={clsx('w-full', className)}>
       {label && (
-        <label 
+        <label
           htmlFor={inputId}
           className="mb-2 block text-sm font-medium text-greenly-charcoal"
         >
@@ -200,8 +279,8 @@ export const Select = forwardRef(({
           </option>
         )}
         {options.map((option) => (
-          <option 
-            key={option.value} 
+          <option
+            key={option.value}
             value={option.value}
             disabled={option.disabled}
           >
@@ -210,16 +289,20 @@ export const Select = forwardRef(({
         ))}
       </select>
       {error && (
-        <p 
+        <motion.p
           id={`${inputId}-error`}
           className="mt-2 text-sm text-greenly-alert"
           role="alert"
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.15 }}
         >
           {error}
-        </p>
+        </motion.p>
       )}
       {helperText && !error && (
-        <p 
+        <p
           id={`${inputId}-helper`}
           className="mt-2 text-sm text-greenly-gray"
         >
@@ -232,18 +315,47 @@ export const Select = forwardRef(({
 
 Select.displayName = 'Select'
 
+Select.propTypes = {
+  /** Select label */
+  label: PropTypes.string,
+  /** Error message (displays in red below select) */
+  error: PropTypes.string,
+  /** Helper text (displays below select when no error) */
+  helperText: PropTypes.string,
+  /** Required field indicator */
+  required: PropTypes.bool,
+  /** Array of option objects with { value, label, disabled? } */
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      value: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+      disabled: PropTypes.bool,
+    })
+  ),
+  /** Placeholder option text */
+  placeholder: PropTypes.string,
+  /** Additional CSS classes */
+  className: PropTypes.string,
+  /** Select ID (auto-generated if not provided) */
+  id: PropTypes.string,
+  /** Select name (for React Hook Form) */
+  name: PropTypes.string,
+  /** Disabled state */
+  disabled: PropTypes.bool,
+}
+
 /**
  * Checkbox - Single checkbox input
  */
-export const Checkbox = forwardRef(({ 
+export const Checkbox = forwardRef(({
   label,
   error,
   className = '',
   id,
-  ...props 
+  ...props
 }, ref) => {
   const inputId = id || `checkbox-${Math.random().toString(36).substr(2, 9)}`
-  
+
   return (
     <div className={clsx('flex items-start', className)}>
       <input
@@ -259,7 +371,7 @@ export const Checkbox = forwardRef(({
         {...props}
       />
       {label && (
-        <label 
+        <label
           htmlFor={inputId}
           className="ml-3 text-sm text-greenly-charcoal cursor-pointer select-none"
         >
@@ -267,9 +379,16 @@ export const Checkbox = forwardRef(({
         </label>
       )}
       {error && (
-        <p className="mt-1 text-sm text-greenly-alert" role="alert">
+        <motion.p
+          className="mt-1 text-sm text-greenly-alert"
+          role="alert"
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.15 }}
+        >
           {error}
-        </p>
+        </motion.p>
       )}
     </div>
   )
@@ -277,18 +396,39 @@ export const Checkbox = forwardRef(({
 
 Checkbox.displayName = 'Checkbox'
 
+Checkbox.propTypes = {
+  /** Checkbox label */
+  label: PropTypes.string,
+  /** Error message (displays in red) */
+  error: PropTypes.string,
+  /** Additional CSS classes */
+  className: PropTypes.string,
+  /** Checkbox ID (auto-generated if not provided) */
+  id: PropTypes.string,
+  /** Checkbox name (for React Hook Form) */
+  name: PropTypes.string,
+  /** Checked state */
+  checked: PropTypes.bool,
+  /** Default checked state (for uncontrolled) */
+  defaultChecked: PropTypes.bool,
+  /** Disabled state */
+  disabled: PropTypes.bool,
+  /** onChange handler */
+  onChange: PropTypes.func,
+}
+
 /**
  * Radio - Radio button input
  */
-export const Radio = forwardRef(({ 
+export const Radio = forwardRef(({
   label,
   error,
   className = '',
   id,
-  ...props 
+  ...props
 }, ref) => {
   const inputId = id || `radio-${Math.random().toString(36).substr(2, 9)}`
-  
+
   return (
     <div className={clsx('flex items-start', className)}>
       <input
@@ -304,7 +444,7 @@ export const Radio = forwardRef(({
         {...props}
       />
       {label && (
-        <label 
+        <label
           htmlFor={inputId}
           className="ml-3 text-sm text-greenly-charcoal cursor-pointer select-none"
         >
@@ -312,14 +452,44 @@ export const Radio = forwardRef(({
         </label>
       )}
       {error && (
-        <p className="mt-1 text-sm text-greenly-alert" role="alert">
+        <motion.p
+          className="mt-1 text-sm text-greenly-alert"
+          role="alert"
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.15 }}
+        >
           {error}
-        </p>
+        </motion.p>
       )}
     </div>
   )
 })
 
 Radio.displayName = 'Radio'
+
+Radio.propTypes = {
+  /** Radio button label */
+  label: PropTypes.string,
+  /** Error message (displays in red) */
+  error: PropTypes.string,
+  /** Additional CSS classes */
+  className: PropTypes.string,
+  /** Radio ID (auto-generated if not provided) */
+  id: PropTypes.string,
+  /** Radio name (for React Hook Form) - required for grouping */
+  name: PropTypes.string.isRequired,
+  /** Radio value */
+  value: PropTypes.string.isRequired,
+  /** Checked state */
+  checked: PropTypes.bool,
+  /** Default checked state (for uncontrolled) */
+  defaultChecked: PropTypes.bool,
+  /** Disabled state */
+  disabled: PropTypes.bool,
+  /** onChange handler */
+  onChange: PropTypes.func,
+}
 
 export default Input

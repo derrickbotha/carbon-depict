@@ -108,13 +108,38 @@ class ReportGenerator {
   constructor(frameworkId) {
     this.frameworkId = frameworkId;
     this.template = FRAMEWORK_TEMPLATES[frameworkId];
-    this.data = esgDataManager.getFrameworkData(frameworkId);
-    this.scores = esgDataManager.getFrameworkScore(frameworkId);
+    if (!this.template) {
+      throw new Error(`Unsupported framework: ${frameworkId}`);
+    }
+    this.data = null;
+    this.scores = null;
     this.doc = null;
   }
 
+  async ensureDataLoaded() {
+    if (!this.data) {
+      try {
+        this.data = await esgDataManager.getFrameworkData(this.frameworkId);
+      } catch (error) {
+        console.error(`Error loading data for framework ${this.frameworkId}:`, error);
+        this.data = {};
+      }
+    }
+
+    if (!this.scores) {
+      try {
+        this.scores = esgDataManager.getFrameworkScore(this.frameworkId) || {};
+      } catch (error) {
+        console.error(`Error loading scores for framework ${this.frameworkId}:`, error);
+        this.scores = {};
+      }
+    }
+  }
+
   // Generate preview HTML
-  generatePreview() {
+  async generatePreview() {
+    await this.ensureDataLoaded();
+
     const sections = this.template.sections.map(section => {
       const subsectionData = this._getSubsectionData(section);
       return {
@@ -127,6 +152,7 @@ class ReportGenerator {
     });
 
     return {
+      frameworkId: this.frameworkId,
       framework: this.template.name,
       generatedDate: new Date().toLocaleDateString(),
       progress: this.scores?.progress || 0,
@@ -137,6 +163,8 @@ class ReportGenerator {
 
   // Generate and download PDF
   async generatePDF() {
+    await this.ensureDataLoaded();
+
     this.doc = new jsPDF();
     const pageWidth = this.doc.internal.pageSize.getWidth();
     const pageHeight = this.doc.internal.pageSize.getHeight();
@@ -355,12 +383,13 @@ class ReportGenerator {
 
   _getSubsectionData(section) {
     const sectionData = {};
-    
-    if (this.data && typeof this.data === 'object') {
+    const sourceData = this.data && typeof this.data === 'object' ? this.data : {};
+
+    if (sourceData && typeof sourceData === 'object') {
       section.subsections.forEach(subsection => {
         // Try to find matching data in the stored data
         const key = subsection.toLowerCase().replace(/[^a-z0-9]/g, '-');
-        sectionData[subsection] = this.data[key] || this.data[subsection] || null;
+        sectionData[subsection] = sourceData[key] || sourceData[subsection] || null;
       });
     }
 
@@ -379,7 +408,7 @@ class ReportGenerator {
 }
 
 // Export report generation functions
-export const generateReportPreview = (frameworkId) => {
+export const generateReportPreview = async (frameworkId) => {
   const generator = new ReportGenerator(frameworkId);
   return generator.generatePreview();
 };

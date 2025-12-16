@@ -48,6 +48,30 @@ const ESGMetricSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
+    sourceType: {
+      type: String,
+      trim: true,
+      enum: {
+        values: [
+          // Emissions
+          'scope1', 'scope2', 'ghg_inventory', 'energy_management',
+          // Environmental
+          'water_management', 'waste_management', 'biodiversity_land_use',
+          'materials_circular_economy', 'pollution',
+          // Social
+          'employee_demographics', 'diversity_inclusion', 'health_safety',
+          'training_development', 'human_rights', 'community_engagement',
+          // Governance
+          'board_composition', 'ethics_anti_corruption',
+          // Frameworks
+          'gri', 'sasb', 'tcfd', 'cdp', 'issb', 'sdg', 'framework_generic',
+          // Other
+          'custom'
+        ],
+        message: '{VALUE} is not a valid source type'
+      },
+      index: true,
+    },
     metricName: {
       type: String,
       trim: true,
@@ -240,6 +264,7 @@ ESGMetricSchema.index({ companyId: 1, topic: 1, createdAt: -1 })
 ESGMetricSchema.index({ companyId: 1, pillar: 1, reportingPeriod: 1 })
 ESGMetricSchema.index({ companyId: 1, approvalStatus: 1, createdAt: -1 })
 ESGMetricSchema.index({ companyId: 1, complianceStatus: 1 })
+ESGMetricSchema.index({ companyId: 1, sourceType: 1, reportingPeriod: 1 })
 
 // Covering index for dashboard queries
 ESGMetricSchema.index(
@@ -398,7 +423,7 @@ ESGMetricSchema.statics = {
     })
     .sort({ createdAt: -1 })
     .limit(limit)
-    .populate('userId', 'name email')
+    .populate('userId', 'firstName lastName email')
     .lean()
   },
 

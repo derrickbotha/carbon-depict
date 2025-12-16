@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
+  darkMode: ['class', '[data-theme="dark"]'], // Enable dark mode via data-theme attribute
   theme: {
     screens: {
       'xs': '320px',
@@ -12,6 +13,19 @@ export default {
     },
     extend: {
       colors: {
+        // Semantic tokens that respect theme (via CSS variables)
+        'bg-primary': 'var(--bg-primary)',
+        'bg-secondary': 'var(--bg-secondary)',
+        'bg-tertiary': 'var(--bg-tertiary)',
+        'text-primary': 'var(--text-primary)',
+        'text-secondary': 'var(--text-secondary)',
+        'text-muted': 'var(--text-muted)',
+        'border-primary': 'var(--border-primary)',
+        'border-secondary': 'var(--border-secondary)',
+
+        // Brand colors (theme-independent)
+        'brand-primary': 'var(--brand-primary)',
+        'brand-secondary': 'var(--brand-secondary)',
         // Greenly Design System - Primary Colors (Mapped to Scope Page Design)
         'greenly-primary': '#07393C', // Midnight (Primary Dark)
         'greenly-primary-dark': '#052e31',

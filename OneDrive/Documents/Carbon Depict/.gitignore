@@ -53,3 +53,6 @@ __tests__/
 
 # Coverage
 coverage/
+
+*storybook.log
+storybook-static

@@ -13,6 +13,13 @@ const Facility = require('./Facility')
 const GHGEmission = require('./GHGEmission')
 const ESGMetric = require('./ESGMetric')
 const GRIDisclosure = require('./GRIDisclosure')
+const CSRDDisclosure = require('./CSRDDisclosure')
+const MaterialityAssessment = require('./MaterialityAssessment')
+const Scope3Emission = require('./Scope3Emission')
+const RiskRegister = require('./RiskRegister')
+const ESGTarget = require('./ESGTarget')
+const SBTiTarget = require('./SBTiTarget')
+const PCAFAssessment = require('./PCAFAssessment')
 
 // Existing models
 const EmissionFactor = require('./EmissionFactor')
@@ -33,24 +40,41 @@ module.exports = {
   User,
   Location,
   Facility,
+
+  // Emissions models
   GHGEmission,
+  Scope3Emission,
+
+  // ESG & Framework models
   ESGMetric,
   GRIDisclosure,
+  CSRDDisclosure,
+
+  // Assessments
+  MaterialityAssessment,
+  SupplierAssessment,
+
+  // Risk & Targets
+  RiskRegister,
+  ESGTarget,
+  SBTiTarget,
+
+  // Financial institutions
+  PCAFAssessment,
 
   // Data and factors
   EmissionFactor,
-  
+
   // AI and ML
   AIInference, // Legacy
   MLModelPrediction, // New comprehensive ML model
   DocumentEmbedding, // Vector embeddings for semantic search
-  
+
   // Logging and tracking
   ActivityLog,
   IncidentLog,
-  
-  // Templates and assessments
+
+  // Templates and engagement
   FrameworkTemplate,
   StakeholderEngagement,
-  SupplierAssessment,
 }

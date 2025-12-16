@@ -26,13 +26,10 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ error: 'Invalid token' })
     }
 
-    // Get user from database (with company)
+    // Get user from database
     const user = await User.findById(decoded.userId)
-      .populate({
-        path: 'company',
-        select: 'name industry subscription isActive'
-      })
       .select('-password')
+      .lean()  // Use lean() to get a plain JS object instead of Mongoose document
 
     if (!user) {
       return res.status(401).json({ error: 'User not found' })
@@ -48,20 +45,27 @@ const authenticate = async (req, res, next) => {
       })
     }
 
-    if (user.company && !user.company.isActive) {
-      return res.status(403).json({ error: 'Company account is inactive' })
+    // Check company status if user has a company - fetch it separately to avoid circular refs
+    if (user.companyId) {
+      const Company = require('../models/mongodb/Company')
+      const company = await Company.findById(user.companyId).select('isActive name').lean()
+      if (company && !company.isActive) {
+        return res.status(403).json({ error: 'Company account is inactive' })
+      }
+      // Attach company info to user for convenience
+      user.company = company
     }
 
     // Attach user to request
     req.user = user
-    req.userId = user.id
-    req.companyId = user.companyId ? user.companyId.toString() : user.company?._id?.toString()
+    req.userId = user._id.toString()
+    req.companyId = user.companyId ? user.companyId.toString() : null
 
     // Update last login occasionally to avoid write amplification
+    // Use findByIdAndUpdate instead of save() to avoid triggering validators on populated documents
     const now = Date.now()
     if (!user.lastLogin || now - new Date(user.lastLogin).getTime() > 5 * 60 * 1000) {
-      user.lastLogin = new Date(now)
-      await user.save()
+      await User.findByIdAndUpdate(user._id, { lastLogin: new Date(now) })
     }
 
     next()

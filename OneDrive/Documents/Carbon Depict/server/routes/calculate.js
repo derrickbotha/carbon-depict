@@ -31,7 +31,7 @@ router.post('/fuels', async (req, res) => {
     // Optionally save to database
     if (save && req.user) {
       const saved = await EmissionsCalculator.saveEmission(
-        req.user.company,
+        req.companyId,
         result,
         { reportingPeriod: req.body.reportingPeriod }
       )
@@ -71,7 +71,7 @@ router.post('/electricity', async (req, res) => {
     
     if (save && req.user) {
       const saved = await EmissionsCalculator.saveEmission(
-        req.user.company,
+        req.companyId,
         result,
         { reportingPeriod: req.body.reportingPeriod }
       )
@@ -110,7 +110,7 @@ router.post('/transport', async (req, res) => {
     
     if (save && req.user) {
       const saved = await EmissionsCalculator.saveEmission(
-        req.user.company,
+        req.companyId,
         result,
         { reportingPeriod: req.body.reportingPeriod }
       )
@@ -149,7 +149,7 @@ router.post('/air-travel', async (req, res) => {
     
     if (save && req.user) {
       const saved = await EmissionsCalculator.saveEmission(
-        req.user.company,
+        req.companyId,
         result,
         { reportingPeriod: req.body.reportingPeriod }
       )
@@ -188,7 +188,7 @@ router.post('/waste', async (req, res) => {
     
     if (save && req.user) {
       const saved = await EmissionsCalculator.saveEmission(
-        req.user.company,
+        req.companyId,
         result,
         { reportingPeriod: req.body.reportingPeriod }
       )
@@ -227,7 +227,7 @@ router.post('/water', async (req, res) => {
     
     if (save && req.user) {
       const saved = await EmissionsCalculator.saveEmission(
-        req.user.company,
+        req.companyId,
         result,
         { reportingPeriod: req.body.reportingPeriod }
       )
@@ -287,7 +287,7 @@ router.post('/batch', async (req, res) => {
         // Save if requested
         if (save && req.user) {
           const saved = await EmissionsCalculator.saveEmission(
-            req.user.company,
+            req.companyId,
             result,
             { 
               reportingPeriod: entry.reportingPeriod || req.body.reportingPeriod,

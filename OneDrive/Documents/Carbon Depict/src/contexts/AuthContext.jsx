@@ -1,6 +1,7 @@
 // Cache bust 2025-10-23
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiClient } from '../utils/api';
+import esgDataManager from '../utils/esgDataManager';
 
 const AuthContext = createContext(null);
 
@@ -26,6 +27,8 @@ export const AuthProvider = ({ children }) => {
           // Verify token and get user data
           const response = await apiClient.auth.verifyToken();
           setUser(response.data.user);
+          // Initialize ESG Data Manager after authentication
+          await esgDataManager.initialize();
         } catch (err) {
           console.error('Token verification failed:', err);
           localStorage.removeItem('authToken');
@@ -40,17 +43,20 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setError(null);
-      
+
       const loginData = { email, password };
       const response = await apiClient.auth.login(loginData);
-      
+
       const { token, user: userData } = response.data;
 
       // Store token
       localStorage.setItem('authToken', token);
-      
+
       // Set user data
       setUser(userData);
+
+      // Initialize ESG Data Manager after successful login
+      await esgDataManager.initialize();
 
       return { success: true, user: userData };
     } catch (err) {
@@ -68,9 +74,12 @@ export const AuthProvider = ({ children }) => {
 
       // Store token
       localStorage.setItem('authToken', token);
-      
+
       // Set user data
       setUser(userData);
+
+      // Initialize ESG Data Manager after successful registration
+      await esgDataManager.initialize();
 
       return { success: true, user: userData };
     } catch (err) {

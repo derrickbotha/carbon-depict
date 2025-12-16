@@ -3,6 +3,7 @@ import MarketingLayout from './layouts/MarketingLayout'
 import DashboardLayout from './layouts/DashboardLayout'
 import PWAInstallPrompt from './components/PWAInstallPrompt'
 import { AuthProvider } from './contexts/AuthContext'
+import { AppStateProvider } from './contexts/AppStateContext'
 import { NavigationHistoryProvider } from './contexts/NavigationHistoryContext'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -52,6 +53,9 @@ import TrainingDevelopmentCollection from './pages/dashboard/TrainingDevelopment
 import DiversityInclusionCollection from './pages/dashboard/DiversityInclusionCollection'
 import MaterialsCircularEconomyCollection from './pages/dashboard/MaterialsCircularEconomyCollection'
 import BiodiversityLandUseCollection from './pages/dashboard/BiodiversityLandUseCollection'
+import MessagingPage from './pages/dashboard/MessagingPage'
+import ApprovalsPage from './pages/dashboard/ApprovalsPage'
+import BroadcastPage from './pages/dashboard/BroadcastPage'
 
 // Auth Pages
 import LoginPage from './pages/auth/LoginPage'
@@ -63,9 +67,10 @@ import APITestPage from './pages/APITestPage'
 function App() {
   return (
     <AuthProvider>
-      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <NavigationHistoryProvider>
-          <Routes>
+      <AppStateProvider>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <NavigationHistoryProvider>
+            <Routes>
           {/* Marketing Routes */}
           <Route path="/" element={<MarketingLayout />}>
           <Route index element={<HomePage />} />
@@ -95,6 +100,9 @@ function App() {
           <Route path="emissions/scope2" element={<Scope2DataCollection />} />
           <Route path="emissions/scope3" element={<Scope3DataCollection />} />
           <Route path="reports" element={<ReportsPage />} />
+          <Route path="messages" element={<MessagingPage />} />
+          <Route path="approvals" element={<ApprovalsPage />} />
+          <Route path="broadcast" element={<BroadcastPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="esg" element={<ESGDashboardHome />} />
           <Route path="esg/frameworks" element={<ESGFrameworksPage />} />
@@ -130,10 +138,11 @@ function App() {
           <Route path="ghg-inventory" element={<GHGInventory />} />
           <Route path="esg/environmental" element={<EnvironmentalDashboard />} />
         </Route>
-      </Routes>
-        </NavigationHistoryProvider>
-    </Router>
-    <PWAInstallPrompt />
+            </Routes>
+          </NavigationHistoryProvider>
+        </Router>
+        <PWAInstallPrompt />
+      </AppStateProvider>
     </AuthProvider>
   )
 }

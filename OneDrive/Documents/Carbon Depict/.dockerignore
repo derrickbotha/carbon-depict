@@ -1,10 +1,14 @@
-# Dependencies
+# Dependencies - exclude all node_modules recursively
+**/node_modules
+**/node_modules/**
 node_modules
+server/node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-package-lock.json
+# Keep package-lock.json for Docker builds
+# package-lock.json
 yarn.lock
 pnpm-lock.yaml
 

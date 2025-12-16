@@ -18,7 +18,14 @@ router.get('/', async (req, res) => {
   try {
     const { companyId, framework, pillar, reportingPeriod, isMaterial, status } = req.query
 
-    const filters = { companyId: companyId || req.user.company }
+    // Use companyId from query, or from user's companyId, or from populated company._id
+    const effectiveCompanyId = companyId || req.companyId || req.user?.companyId?.toString() || req.user?.company?._id?.toString()
+    
+    if (!effectiveCompanyId) {
+      return res.status(400).json({ success: false, error: 'Company ID is required' })
+    }
+
+    const filters = { companyId: effectiveCompanyId }
     if (framework) filters.framework = framework
     if (pillar) filters.pillar = pillar
     if (reportingPeriod) filters.reportingPeriod = reportingPeriod
@@ -26,7 +33,7 @@ router.get('/', async (req, res) => {
     if (status) filters.status = status
 
     const metrics = await ESGMetric.find(filters)
-      .populate('userId', 'name email')
+      .populate('userId', 'firstName lastName email')
       .sort({ createdAt: -1 })
       .lean()
 
@@ -71,8 +78,8 @@ router.post('/', async (req, res) => {
 
     // Create new metric
     const newMetric = new ESGMetric({
-      companyId: req.user.company,
-      userId: req.user.id,
+      companyId: req.companyId || req.user.companyId,
+      userId: req.userId || req.user._id,
       framework,
       pillar,
       topic,
@@ -101,202 +108,13 @@ router.post('/', async (req, res) => {
   }
 })
 
-// @route   GET /api/esg/metrics/:id
-// @desc    Get a single ESG metric
-// @access  Private
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params
-
-    const metric = await ESGMetric.findById(id)
-      .populate('userId', 'name email')
-      .populate('companyId', 'name')
-      .lean()
-
-    if (!metric) {
-      return res.status(404).json({
-        success: false,
-        error: 'Metric not found'
-      })
-    }
-
-    // Check if user has access to this metric
-    if (metric.companyId._id.toString() !== req.user.company.toString()) {
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      })
-    }
-
-    res.json({
-      success: true,
-      data: metric,
-    })
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message })
-  }
-})
-
-// @route   PUT /api/esg/metrics/:id
-// @desc    Update an ESG metric
-// @access  Private
-router.put('/:id', async (req, res) => {
-  try {
-    const { id } = req.params
-
-    const metric = await ESGMetric.findById(id)
-    if (!metric) {
-      return res.status(404).json({
-        success: false,
-        error: 'Metric not found'
-      })
-    }
-
-    // Check access
-    if (metric.companyId.toString() !== req.user.company.toString()) {
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      })
-    }
-
-    // Update fields
-    Object.assign(metric, req.body)
-    await metric.save()
-
-    res.json({
-      success: true,
-      data: metric,
-    })
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message })
-  }
-})
-
-// @route   DELETE /api/esg/metrics/:id
-// @desc    Delete an ESG metric
-// @access  Private (Admin only)
-router.delete('/:id', async (req, res) => {
-  try {
-    const { id } = req.params
-
-    const metric = await ESGMetric.findById(id)
-    if (!metric) {
-      return res.status(404).json({
-        success: false,
-        error: 'Metric not found'
-      })
-    }
-
-    // Check access
-    if (metric.companyId.toString() !== req.user.company.toString()) {
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      })
-    }
-
-    await ESGMetric.deleteOne({ _id: id })
-
-    res.json({
-      success: true,
-      message: 'Metric deleted successfully',
-    })
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message })
-  }
-})
-
-// @route   GET /api/esg/metrics/framework/:framework
-// @desc    Get metrics by framework
-// @access  Private
-router.get('/framework/:framework', async (req, res) => {
-  try {
-    const { framework } = req.params
-    const { companyId } = req.query
-
-    // TODO: Fetch from database
-    const metrics = [
-      {
-        id: '1',
-        framework,
-        pillar: 'Environmental',
-        topic: `${framework} Climate`,
-        metricName: 'GHG Emissions',
-        value: 12450,
-        unit: 'tCO2e',
-      },
-    ]
-
-    res.json({
-      success: true,
-      framework,
-      count: metrics.length,
-      data: metrics,
-    })
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message })
-  }
-})
-
-// @route   GET /api/esg/metrics/pillar/:pillar
-// @desc    Get metrics by pillar (Environmental, Social, Governance)
-// @access  Private
-router.get('/pillar/:pillar', async (req, res) => {
-  try {
-    const { pillar } = req.params
-    const { companyId } = req.query
-
-    // TODO: Fetch from database
-    const metrics = []
-
-    res.json({
-      success: true,
-      pillar,
-      count: metrics.length,
-      data: metrics,
-    })
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message })
-  }
-})
-
-// @route   POST /api/esg/metrics/bulk
-// @desc    Bulk import ESG metrics (from Excel/CSV)
-// @access  Private
-router.post('/bulk', async (req, res) => {
-  try {
-    const { metrics } = req.body
-
-    if (!Array.isArray(metrics)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Metrics must be an array',
-      })
-    }
-
-    // TODO: Validate and save metrics
-    const imported = metrics.length
-    const failed = 0
-
-    res.json({
-      success: true,
-      message: `Successfully imported ${imported} metrics`,
-      imported,
-      failed,
-    })
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message })
-  }
-})
-
 // @route   GET /api/esg/metrics/summary
 // @desc    Get ESG metrics summary for dashboard
 // @access  Private
 router.get('/summary', async (req, res) => {
   try {
     const { reportingPeriod } = req.query
-    const companyId = req.user.company
+    const companyId = req.companyId || req.user.companyId
 
     const GHGEmission = require('../models/mongodb/GHGEmission')
     
@@ -387,5 +205,306 @@ router.get('/summary', async (req, res) => {
     res.status(500).json({ success: false, error: error.message })
   }
 })
+
+// @route   POST /api/esg/metrics/bulk
+// @desc    Bulk import ESG metrics (from Excel/CSV)
+// @access  Private
+router.post('/bulk', async (req, res) => {
+  try {
+    const { metrics } = req.body
+
+    if (!Array.isArray(metrics)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Metrics must be an array',
+      })
+    }
+
+    // TODO: Validate and save metrics
+    const imported = metrics.length
+    const failed = 0
+
+    res.json({
+      success: true,
+      message: `Successfully imported ${imported} metrics`,
+      imported,
+      failed,
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// @route   GET /api/esg/metrics/framework/:framework
+// @desc    Get metrics by framework
+// @access  Private
+router.get('/framework/:framework', async (req, res) => {
+  try {
+    const { framework } = req.params
+    const { companyId } = req.query
+
+    // TODO: Fetch from database
+    const metrics = [
+      {
+        id: '1',
+        framework,
+        pillar: 'Environmental',
+        topic: `${framework} Climate`,
+        metricName: 'GHG Emissions',
+        value: 12450,
+        unit: 'tCO2e',
+      },
+    ]
+
+    res.json({
+      success: true,
+      framework,
+      count: metrics.length,
+      data: metrics,
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// @route   GET /api/esg/metrics/pillar/:pillar
+// @desc    Get metrics by pillar (Environmental, Social, Governance)
+// @access  Private
+router.get('/pillar/:pillar', async (req, res) => {
+  try {
+    const { pillar } = req.params
+    const { companyId } = req.query
+
+    // TODO: Fetch from database
+    const metrics = []
+
+    res.json({
+      success: true,
+      pillar,
+      count: metrics.length,
+      data: metrics,
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// @route   GET /api/esg/metrics/:id
+// @desc    Get a single ESG metric
+// @access  Private
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const metric = await ESGMetric.findById(id)
+      .populate('userId', 'firstName lastName email')
+      .populate('companyId', 'name')
+      .lean()
+
+    if (!metric) {
+      return res.status(404).json({
+        success: false,
+        error: 'Metric not found'
+      })
+    }
+
+    // Check if user has access to this metric
+    const metricCompanyId = metric.companyId?._id?.toString() || metric.companyId?.toString()
+    const userCompanyId = req.companyId || req.user.companyId?.toString()
+    if (metricCompanyId !== userCompanyId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied'
+      })
+    }
+
+    res.json({
+      success: true,
+      data: metric,
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// @route   PUT /api/esg/metrics/:id
+// @desc    Update an ESG metric
+// @access  Private
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const metric = await ESGMetric.findById(id)
+    if (!metric) {
+      return res.status(404).json({
+        success: false,
+        error: 'Metric not found'
+      })
+    }
+
+    // Check access
+    const userCompanyId = req.companyId || req.user.companyId?.toString()
+    if (metric.companyId.toString() !== userCompanyId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied'
+      })
+    }
+
+    // Update fields
+    Object.assign(metric, req.body)
+    await metric.save()
+
+    res.json({
+      success: true,
+      data: metric,
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// @route   DELETE /api/esg/metrics/:id
+// @desc    Delete an ESG metric
+// @access  Private (Admin only)
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const metric = await ESGMetric.findById(id)
+    if (!metric) {
+      return res.status(404).json({
+        success: false,
+        error: 'Metric not found'
+      })
+    }
+
+    // Check access
+    const userCompanyId = req.companyId || req.user.companyId?.toString()
+    if (metric.companyId.toString() !== userCompanyId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied'
+      })
+    }
+
+    await ESGMetric.deleteOne({ _id: id })
+
+    res.json({
+      success: true,
+      message: 'Metric deleted successfully',
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// @route   PUT /api/esg/metrics/:id/approve
+// @desc    Approve an ESG metric entry
+// @access  Private (Manager/Admin only)
+router.put('/:id/approve', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { notes } = req.body
+
+    // Check if user is manager or admin
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Only managers and administrators can approve entries'
+      })
+    }
+
+    const metric = await ESGMetric.findById(id)
+    if (!metric) {
+      return res.status(404).json({
+        success: false,
+        error: 'Metric not found'
+      })
+    }
+
+    // Check company access
+    const userCompanyId = req.companyId || req.user.companyId?.toString()
+    if (metric.companyId.toString() !== userCompanyId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied'
+      })
+    }
+
+    metric.approvalStatus = 'approved'
+    metric.approvedBy = req.user._id
+    metric.approvedAt = new Date()
+    metric.notes = notes || 'Approved by manager'
+
+    await metric.save()
+
+    res.json({
+      success: true,
+      data: metric,
+      message: 'Metric approved successfully'
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+// @route   PUT /api/esg/metrics/:id/reject
+// @desc    Reject an ESG metric entry
+// @access  Private (Manager/Admin only)
+router.put('/:id/reject', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { notes } = req.body
+
+    if (!notes || !notes.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Rejection reason is required'
+      })
+    }
+
+    // Check if user is manager or admin
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Only managers and administrators can reject entries'
+      })
+    }
+
+    const metric = await ESGMetric.findById(id)
+    if (!metric) {
+      return res.status(404).json({
+        success: false,
+        error: 'Metric not found'
+      })
+    }
+
+    // Check company access
+    const userCompanyId = req.companyId || req.user.companyId?.toString()
+    if (metric.companyId.toString() !== userCompanyId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied'
+      })
+    }
+
+    metric.approvalStatus = 'rejected'
+    metric.approvedBy = req.user._id
+    metric.approvedAt = new Date()
+    metric.notes = notes.trim()
+
+    await metric.save()
+
+    res.json({
+      success: true,
+      data: metric,
+      message: 'Metric rejected successfully'
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
 
 module.exports = router

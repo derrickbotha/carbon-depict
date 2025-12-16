@@ -1,4 +1,19 @@
-// Cache bust 2025-10-23
+/**
+ * MetricCard Component - Carbon Depict UI Library
+ *
+ * Performance metrics card following Greenly Design System
+ *
+ * Features:
+ * - PropTypes validation
+ * - Framer Motion hover animations
+ * - Loading state with skeleton
+ * - Progress visualization
+ * - Trend indicators
+ * - Secondary metrics
+ * - 280px min-height, large Roboto Mono metrics
+ */
+import PropTypes from 'prop-types'
+import { motion } from 'framer-motion'
 import clsx from 'clsx'
 import { TrendingUp, TrendingDown, Minus } from '@atoms/Icon'
 
@@ -12,13 +27,15 @@ export default function MetricCard({
   subtitle,
   value,
   unit,
-  secondaryMetrics = [], // Array of { label, value, unit }
-  progress, // { current: number, target: number, status: 'on-track' | 'behind' | 'critical' }
-  trend, // { value: number, direction: 'up' | 'down' | 'neutral', positive: boolean }
-  actions, // Optional JSX for footer buttons
+  secondaryMetrics = [],
+  progress,
+  trend,
+  actions,
   className = '',
   loading = false,
+  onClick,
 }) {
+  const isInteractive = !!onClick
   const TrendIcon = trend?.direction === 'up' ? TrendingUp : trend?.direction === 'down' ? TrendingDown : Minus
 
   const trendColor = {
@@ -34,11 +51,18 @@ export default function MetricCard({
                          'progress-bar'
 
   return (
-    <div
+    <motion.div
+      onClick={onClick}
       className={clsx(
         'metric-card',
+        isInteractive && 'cursor-pointer',
         className
       )}
+      whileHover={!loading ? { y: -4, scale: 1.02 } : undefined}
+      whileTap={isInteractive && !loading ? { scale: 0.98 } : undefined}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+      role={isInteractive ? 'button' : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
     >
       {/* Header */}
       <div className="mb-4">
@@ -143,8 +167,48 @@ export default function MetricCard({
           {actions}
         </div>
       )}
-    </div>
+    </motion.div>
   )
+}
+
+MetricCard.propTypes = {
+  /** Card title */
+  title: PropTypes.string.isRequired,
+  /** Card subtitle/description */
+  subtitle: PropTypes.string,
+  /** Primary metric value */
+  value: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  /** Unit of measurement */
+  unit: PropTypes.string,
+  /** Array of secondary metrics { label, value, unit } */
+  secondaryMetrics: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.string.isRequired,
+      value: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+      unit: PropTypes.string,
+    })
+  ),
+  /** Progress data { current, target, status: 'on-track' | 'behind' | 'critical' } */
+  progress: PropTypes.shape({
+    current: PropTypes.number.isRequired,
+    target: PropTypes.number.isRequired,
+    status: PropTypes.oneOf(['on-track', 'behind', 'critical']),
+  }),
+  /** Trend data { value, direction: 'up' | 'down' | 'neutral', positive, label? } */
+  trend: PropTypes.shape({
+    value: PropTypes.number.isRequired,
+    direction: PropTypes.oneOf(['up', 'down', 'neutral']).isRequired,
+    positive: PropTypes.bool.isRequired,
+    label: PropTypes.string,
+  }),
+  /** Footer action buttons (JSX) */
+  actions: PropTypes.node,
+  /** Additional CSS classes */
+  className: PropTypes.string,
+  /** Loading state - shows skeleton */
+  loading: PropTypes.bool,
+  /** Click handler (makes card interactive) */
+  onClick: PropTypes.func,
 }
 
 /**
@@ -164,4 +228,13 @@ export function MetricCardGrid({ children, columns = 3, className = '' }) {
       {children}
     </div>
   )
+}
+
+MetricCardGrid.propTypes = {
+  /** MetricCard components */
+  children: PropTypes.node.isRequired,
+  /** Number of columns (2, 3, or 4) */
+  columns: PropTypes.oneOf([2, 3, 4]),
+  /** Additional CSS classes */
+  className: PropTypes.string,
 }

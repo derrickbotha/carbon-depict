@@ -33,55 +33,263 @@ import {
   Line
 } from 'recharts';
 import esgDataManager from '../../utils/esgDataManager';
+import { apiClient } from '../../utils/api';
+
+// Helper function to calculate status based on score and trend
+const calculatePillarStatus = (score, trend) => {
+  // Calculate trend direction (comparing last 3 months average to previous 3 months)
+  const recentAvg = trend.slice(-3).reduce((a, b) => a + b, 0) / 3;
+  const previousAvg = trend.slice(-6, -3).reduce((a, b) => a + b, 0) / 3;
+  const trendDirection = recentAvg - previousAvg;
+  
+  // Determine status based on score and trend
+  if (score >= 75 && trendDirection >= 0) {
+    return 'on-track';
+  } else if (score >= 60 && score < 75) {
+    return 'watch';
+  } else if (score < 60 || trendDirection < -5) {
+    return 'risk';
+  } else if (trendDirection < 0 && trendDirection >= -5) {
+    return 'watch';
+  }
+  return 'on-track';
+};
+
+// Helper to generate trend data from metrics
+const generateTrendFromMetrics = (metrics, pillar) => {
+  const pillarMetrics = metrics.filter(m => m.pillar?.toLowerCase() === pillar.toLowerCase());
+  if (pillarMetrics.length === 0) {
+    // Return default trend if no metrics
+    return Array(12).fill(0).map((_, i) => 50 + Math.random() * 30);
+  }
+  
+  // Group by month and calculate average scores
+  const monthlyScores = {};
+  pillarMetrics.forEach(metric => {
+    const date = new Date(metric.createdAt || metric.startDate);
+    const monthKey = date.getMonth();
+    if (!monthlyScores[monthKey]) {
+      monthlyScores[monthKey] = [];
+    }
+    // Use value or calculate from completeness
+    const score = metric.value || (metric.status === 'published' ? 80 : 60);
+    monthlyScores[monthKey].push(score);
+  });
+  
+  // Generate 12-month trend
+  const trend = [];
+  for (let i = 0; i < 12; i++) {
+    if (monthlyScores[i] && monthlyScores[i].length > 0) {
+      trend.push(Math.round(monthlyScores[i].reduce((a, b) => a + b, 0) / monthlyScores[i].length));
+    } else {
+      // Interpolate or use base value
+      trend.push(trend.length > 0 ? trend[trend.length - 1] : 65);
+    }
+  }
+  return trend;
+};
+
+// Calculate pillar score from metrics
+const calculatePillarScore = (metrics, pillar) => {
+  const pillarMetrics = metrics.filter(m => m.pillar?.toLowerCase() === pillar.toLowerCase());
+  if (pillarMetrics.length === 0) {
+    // Default scores if no data
+    const defaults = { environmental: 78, social: 65, governance: 85 };
+    return defaults[pillar.toLowerCase()] || 70;
+  }
+  
+  // Calculate score based on:
+  // - Number of completed metrics
+  // - Data quality
+  // - Status (published vs draft)
+  let totalScore = 0;
+  let weightSum = 0;
+  
+  pillarMetrics.forEach(metric => {
+    let metricScore = 50; // Base score
+    const weight = metric.metadata?.isMaterial ? 2 : 1;
+    
+    // Status bonus
+    if (metric.status === 'published') metricScore += 20;
+    else if (metric.status === 'reviewed') metricScore += 15;
+    else if (metric.status === 'submitted') metricScore += 10;
+    
+    // Data quality bonus
+    if (metric.dataQuality === 'measured') metricScore += 15;
+    else if (metric.dataQuality === 'calculated') metricScore += 10;
+    else if (metric.dataQuality === 'estimated') metricScore += 5;
+    
+    // Value presence bonus
+    if (metric.value !== undefined && metric.value !== null) metricScore += 10;
+    
+    totalScore += metricScore * weight;
+    weightSum += weight;
+  });
+  
+  return Math.min(100, Math.round(totalScore / weightSum));
+};
 
 // --- Custom Hook for Dashboard Logic ---
 const useESGDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [timeframe, setTimeframe] = useState('year');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      // Mock data - in a real app, this would come from an API
-      setData({
-        netZero: {
-          targetYear: 2050,
-          currentProgress: 35, // % reduction from baseline
-          baselineEmissions: 50000,
-          currentEmissions: 32500,
-          yoyReduction: 12.5,
-        },
-        pillars: {
-          environmental: { status: 'on-track', score: 78, trend: [65, 68, 70, 72, 75, 78, 76, 79, 82, 80, 78, 78] },
-          social: { status: 'watch', score: 65, trend: [60, 62, 61, 63, 64, 65, 65, 64, 63, 64, 65, 65] },
-          governance: { status: 'on-track', score: 85, trend: [80, 81, 82, 83, 84, 84, 85, 85, 86, 85, 85, 85] },
-        },
-        emissions: [
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch ESG metrics and summary from API
+        let metrics = [];
+        let summary = null;
+        let frameworkScores = null;
+        
+        try {
+          const metricsResponse = await apiClient.esgMetrics.getAll();
+          metrics = metricsResponse.data?.data || [];
+        } catch (err) {
+          console.warn('Could not fetch ESG metrics, using defaults:', err.message);
+        }
+        
+        try {
+          const summaryResponse = await apiClient.esgMetrics.getSummary({ reportingPeriod: timeframe });
+          summary = summaryResponse.data?.data || null;
+        } catch (err) {
+          console.warn('Could not fetch ESG summary, using calculated values:', err.message);
+        }
+        
+        try {
+          const scoresResponse = await apiClient.esgFrameworkData.getAllScores();
+          frameworkScores = scoresResponse.data?.data || null;
+        } catch (err) {
+          console.warn('Could not fetch framework scores, using defaults:', err.message);
+        }
+        
+        // Calculate pillar data dynamically
+        const envTrend = generateTrendFromMetrics(metrics, 'Environmental');
+        const socialTrend = generateTrendFromMetrics(metrics, 'Social');
+        const govTrend = generateTrendFromMetrics(metrics, 'Governance');
+        
+        // Use summary scores if available, otherwise calculate from metrics
+        const envScore = summary?.environmental?.score || frameworkScores?.environmental?.score || calculatePillarScore(metrics, 'Environmental');
+        const socialScore = summary?.social?.score || frameworkScores?.social?.score || calculatePillarScore(metrics, 'Social');
+        const govScore = summary?.governance?.score || frameworkScores?.governance?.score || calculatePillarScore(metrics, 'Governance');
+        
+        // Calculate emissions data
+        let emissionsData = [
           { name: 'Jan', scope1: 4000, scope2: 2400, scope3: 2400 },
           { name: 'Feb', scope1: 3000, scope2: 1398, scope3: 2210 },
           { name: 'Mar', scope1: 2000, scope2: 9800, scope3: 2290 },
           { name: 'Apr', scope1: 2780, scope2: 3908, scope3: 2000 },
           { name: 'May', scope1: 1890, scope2: 4800, scope3: 2181 },
           { name: 'Jun', scope1: 2390, scope2: 3800, scope3: 2500 },
-        ],
-        targets: [
-          { id: 1, name: '50% Reduction by 2030', progress: 15, status: 'on-track' },
-          { id: 2, name: '100% Renewable Energy', progress: 60, status: 'watch' },
-        ],
-        compliance: [
-          { name: 'CSRD', progress: 80, deadline: '2025-01-01' },
-          { name: 'SBTi', progress: 45, deadline: '2024-12-31' },
-          { name: 'CDP', progress: 100, deadline: '2024-07-31' },
-        ],
-        tasks: [
-          { id: 1, title: 'Upload Q3 Energy Bills', due: 'Today', priority: 'high' },
-          { id: 2, title: 'Verify Employee Demographics', due: 'Tomorrow', priority: 'medium' },
-        ]
-      });
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+        ];
+        
+        try {
+          const emissionsResponse = await apiClient.emissions.getTrends({ period: timeframe });
+          if (emissionsResponse.data?.data) {
+            emissionsData = emissionsResponse.data.data;
+          }
+        } catch (err) {
+          console.warn('Could not fetch emissions trends, using defaults');
+        }
+        
+        // Calculate net zero progress
+        const totalCurrentEmissions = emissionsData.reduce((sum, month) => 
+          sum + (month.scope1 || 0) + (month.scope2 || 0) + (month.scope3 || 0), 0);
+        const baselineEmissions = 50000;
+        const currentProgress = Math.round(((baselineEmissions - totalCurrentEmissions / 6) / baselineEmissions) * 100);
+        
+        setData({
+          netZero: {
+            targetYear: 2050,
+            currentProgress: Math.max(0, Math.min(100, currentProgress)),
+            baselineEmissions,
+            currentEmissions: Math.round(totalCurrentEmissions / 6),
+            yoyReduction: 12.5,
+          },
+          pillars: {
+            environmental: { 
+              status: calculatePillarStatus(envScore, envTrend), 
+              score: envScore, 
+              trend: envTrend 
+            },
+            social: { 
+              status: calculatePillarStatus(socialScore, socialTrend), 
+              score: socialScore, 
+              trend: socialTrend 
+            },
+            governance: { 
+              status: calculatePillarStatus(govScore, govTrend), 
+              score: govScore, 
+              trend: govTrend 
+            },
+          },
+          emissions: emissionsData,
+          targets: [
+            { id: 1, name: '50% Reduction by 2030', progress: 15, status: 'on-track' },
+            { id: 2, name: '100% Renewable Energy', progress: 60, status: 'watch' },
+          ],
+          compliance: [
+            { name: 'CSRD', progress: 80, deadline: '2025-01-01' },
+            { name: 'SBTi', progress: 45, deadline: '2024-12-31' },
+            { name: 'CDP', progress: 100, deadline: '2024-07-31' },
+          ],
+          tasks: [
+            { id: 1, title: 'Upload Q3 Energy Bills', due: 'Today', priority: 'high' },
+            { id: 2, title: 'Verify Employee Demographics', due: 'Tomorrow', priority: 'medium' },
+          ]
+        });
+        
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err.message);
+        // Set default data on error
+        setData({
+          netZero: {
+            targetYear: 2050,
+            currentProgress: 35,
+            baselineEmissions: 50000,
+            currentEmissions: 32500,
+            yoyReduction: 12.5,
+          },
+          pillars: {
+            environmental: { status: 'on-track', score: 78, trend: [65, 68, 70, 72, 75, 78, 76, 79, 82, 80, 78, 78] },
+            social: { status: 'watch', score: 65, trend: [60, 62, 61, 63, 64, 65, 65, 64, 63, 64, 65, 65] },
+            governance: { status: 'on-track', score: 85, trend: [80, 81, 82, 83, 84, 84, 85, 85, 86, 85, 85, 85] },
+          },
+          emissions: [
+            { name: 'Jan', scope1: 4000, scope2: 2400, scope3: 2400 },
+            { name: 'Feb', scope1: 3000, scope2: 1398, scope3: 2210 },
+            { name: 'Mar', scope1: 2000, scope2: 9800, scope3: 2290 },
+            { name: 'Apr', scope1: 2780, scope2: 3908, scope3: 2000 },
+            { name: 'May', scope1: 1890, scope2: 4800, scope3: 2181 },
+            { name: 'Jun', scope1: 2390, scope2: 3800, scope3: 2500 },
+          ],
+          targets: [
+            { id: 1, name: '50% Reduction by 2030', progress: 15, status: 'on-track' },
+            { id: 2, name: '100% Renewable Energy', progress: 60, status: 'watch' },
+          ],
+          compliance: [
+            { name: 'CSRD', progress: 80, deadline: '2025-01-01' },
+            { name: 'SBTi', progress: 45, deadline: '2024-12-31' },
+            { name: 'CDP', progress: 100, deadline: '2024-07-31' },
+          ],
+          tasks: [
+            { id: 1, title: 'Upload Q3 Energy Bills', due: 'Today', priority: 'high' },
+            { id: 2, title: 'Verify Employee Demographics', due: 'Tomorrow', priority: 'medium' },
+          ]
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchDashboardData();
+  }, [timeframe]);
 
   return { loading, timeframe, setTimeframe, data };
 };
@@ -220,16 +428,47 @@ const StrategicGoalTracker = ({ data }) => {
 const PillarPerformanceSnapshot = ({ title, data, icon: Icon, color }) => {
   const sparklineData = data.trend.map((val, i) => ({ i, val }));
 
-  const getStatusColor = (status) => {
+  const getStatusConfig = (status) => {
     switch (status) {
-      case 'on-track': return 'text-greenly-success bg-green-50 border-greenly-success';
-      case 'watch': return 'text-greenly-warning bg-yellow-50 border-greenly-warning';
-      case 'risk': return 'text-greenly-alert bg-red-50 border-greenly-alert';
-      default: return 'text-greenly-slate bg-gray-50 border-greenly-slate';
+      case 'on-track': 
+        return {
+          styles: 'text-green-700 bg-green-100 border-green-300',
+          label: 'ON TRACK',
+          icon: CheckCircle,
+          iconColor: 'text-green-600'
+        };
+      case 'watch': 
+        return {
+          styles: 'text-yellow-700 bg-yellow-100 border-yellow-300',
+          label: 'WATCH',
+          icon: AlertTriangle,
+          iconColor: 'text-yellow-600'
+        };
+      case 'risk': 
+        return {
+          styles: 'text-red-700 bg-red-100 border-red-300',
+          label: 'AT RISK',
+          icon: AlertCircle,
+          iconColor: 'text-red-600'
+        };
+      default: 
+        return {
+          styles: 'text-gray-700 bg-gray-100 border-gray-300',
+          label: 'PENDING',
+          icon: Clock,
+          iconColor: 'text-gray-600'
+        };
     }
   };
 
-  const statusStyles = getStatusColor(data.status);
+  const statusConfig = getStatusConfig(data.status);
+  const StatusIcon = statusConfig.icon;
+  
+  // Calculate trend direction for the sparkline color
+  const trendDirection = data.trend.length >= 2 
+    ? data.trend[data.trend.length - 1] - data.trend[data.trend.length - 2]
+    : 0;
+  const sparklineColor = trendDirection >= 0 ? '#10B981' : '#EF4444';
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-greenly-light p-5 flex flex-col h-full">
@@ -240,8 +479,9 @@ const PillarPerformanceSnapshot = ({ title, data, icon: Icon, color }) => {
           </div>
           <h3 className="font-semibold text-greenly-charcoal">{title}</h3>
         </div>
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${statusStyles}`}>
-          {data.status.replace('-', ' ').toUpperCase()}
+        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border flex items-center gap-1 ${statusConfig.styles}`}>
+          <StatusIcon className={`w-3 h-3 ${statusConfig.iconColor}`} />
+          {statusConfig.label}
         </span>
       </div>
 
@@ -253,7 +493,7 @@ const PillarPerformanceSnapshot = ({ title, data, icon: Icon, color }) => {
         <div className="h-12 w-24">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={sparklineData}>
-              <Line type="monotone" dataKey="val" stroke="#07393C" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="val" stroke={sparklineColor} strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>

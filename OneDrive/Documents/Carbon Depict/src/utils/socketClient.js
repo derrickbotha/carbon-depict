@@ -16,7 +16,7 @@ export const initializeSocket = () => {
     return socket;
   }
 
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('authToken');
 
   if (!token) {
     console.warn('⚠️ Cannot initialize WebSocket: No authentication token found');
@@ -91,6 +91,18 @@ export const emitEvent = (event, data) => {
   } else {
     console.warn('Socket not connected, cannot emit event:', event);
   }
+};
+
+/**
+ * Subscribe to event
+ */
+export const subscribeToEvent = (event, callback) => {
+  const socketInstance = getSocket();
+  if (socketInstance) {
+    socketInstance.on(event, callback);
+    return () => socketInstance.off(event, callback);
+  }
+  return () => {};
 };
 
 export default {

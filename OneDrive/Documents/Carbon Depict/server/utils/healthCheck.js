@@ -69,20 +69,21 @@ async function measureMongoDBResponseTime() {
  */
 async function checkRedis() {
   try {
-    if (!redis || redis.status !== 'ready') {
+    if (!redis || !redis.isAvailable()) {
       return {
         status: 'degraded',
         message: 'Redis not available - using in-memory fallback'
       }
     }
 
+    const redisClient = redis.getClient()
     const start = Date.now()
-    await redis.ping()
+    await redisClient.ping()
     const responseTime = Date.now() - start
 
     // Get Redis info
-    const info = await redis.info('server')
-    const memory = await redis.info('memory')
+    const info = await redisClient.info('server')
+    const memory = await redisClient.info('memory')
 
     return {
       status: 'healthy',
